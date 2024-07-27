@@ -1,22 +1,26 @@
+import { supabase } from '@/lib/supabase';
 import { NextRequest, NextResponse } from 'next/server';
-import { generateText } from "ai"
-import { anthropic } from "@ai-sdk/anthropic"
+import { assessSubmission } from '@/lib/ai';
 
 export async function POST(request: NextRequest) {
   try {
-    const data = await request.json();
-    
-    // Process the data with Anthropic
-    const { text } = await generateText({
-      model: anthropic("claude-3-5-sonnet-20240620"),
-      prompt: `What does this say: ${JSON.stringify(data)}`
-    })
+    const requestData = await request.json();
 
-    console.log(text)
+    console.log('Incoming data:', requestData)
 
+    // Store the submission in Supabase
+    const { error, data } = await supabase
+    .from('submissions')
+    .insert({ submission: requestData, approved: true })
+    .select()
+
+    if (error) throw error;
+
+    // run the LLM assessment but don't wait for it
+    assessSubmission(data[0])
 
     // Return a success response with the analysis
-    return NextResponse.json({ message: text, }, { status: 200 });
+    return NextResponse.json({ status: 200 });
   } catch (error) {
     console.error('Error processing submission:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
