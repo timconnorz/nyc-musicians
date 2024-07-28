@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import { getSupabaseAnonClient } from '@/lib/supabaseFE';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -47,7 +47,6 @@ const sendSubmissionConfirmEmail = async (email: string) => {
 };
 
 export default function SubmissionForm() {
-  const toast = useToast();
   const router = useRouter();
   const [isSubmitted, setIsSubmitted] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -120,11 +119,7 @@ export default function SubmissionForm() {
       }
     } catch (error) {
       setIsLoading(false);
-      toast.toast({
-        title: 'Error submitting form',
-        description: 'Please try again',
-        variant: 'destructive',
-      });
+      toast.error('Error submitting form');
     }
   }
 

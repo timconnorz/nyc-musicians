@@ -18,7 +18,7 @@ import jsConfetti from '@/lib/confetti';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 
 const formSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -26,7 +26,6 @@ const formSchema = z.object({
 
 export default function SignUpForm() {
   const [isSubmitted, setIsSubmitted] = React.useState(false);
-  const toast = useToast();
 
   // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
@@ -39,44 +38,31 @@ export default function SignUpForm() {
   // 2. Define a submit handler.
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      const { data, error } = await getSupabaseAnonClient().auth.signInWithOtp({
-        email: values.email,
-        options: {
-          emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/sign-up/success`,
-        },
+      const { data, error: signInError } =
+        await getSupabaseAnonClient().auth.signInWithOtp({
+          email: values.email,
+          options: {
+            emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/sign-up/success`,
+          },
+        });
+
+      if (signInError) {
+        throw signInError;
+      }
+
+      form.reset();
+      setIsSubmitted(true);
+
+      // Add to Resend audience
+      await fetch('/api/sign-up', {
+        method: 'POST',
+        body: JSON.stringify({ email: values.email }),
       });
 
-      if (!error) {
-        console.log('Sign up successful');
-        form.reset(); // Reset the form
-        setIsSubmitted(true);
-
-        // Add to Resend audience
-        fetch('/api/sign-up', {
-          method: 'POST',
-          body: JSON.stringify({ email: values.email }),
-        }).catch(error => {
-          console.error('Error adding to Resend audience:', error);
-          toast.toast({
-            title: 'Error signing up',
-            description: 'Please try again',
-            variant: 'destructive',
-          });
-        });
-
-        jsConfetti?.addConfetti({
-          emojis: ['🌈', '⚡️', '💥', '✨', '💫', '🌸'],
-        });
-      } else {
-        throw new Error('Sign up failed');
-      }
+      console.log('Email verification sent');
     } catch (error) {
       console.error('Error signing up:', error);
-      toast.toast({
-        title: 'Error signing up',
-        description: 'Please try again',
-        variant: 'destructive',
-      });
+      toast.error('Error signing up');
     }
   }
 
