@@ -1,15 +1,34 @@
-import SubmissionForm from "@/components/SubmissionForm";
-
-import React from 'react';
+'use client';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { Button } from '@/components/ui/button';
 
 export default function Home() {
+  const router = useRouter();
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-        <div className="container max-w-xl">
-            <h1 className="text-4xl font-bold text-center mb-8">Submit a Gig</h1>
-            <SubmissionForm />
+    <div>
+      <div className='flex flex-col items-center justify-center h-screen'>
+        <Image src='/logo.svg' alt='logo' width={200} height={200} />
+        <div className='flex flex-col'>
+          <Button
+            variant='link'
+            onClick={() => {
+              router.push('/sign-up');
+            }}
+          >
+            Sign Up for the Newsletter
+          </Button>
+          <Button
+            variant='link'
+            onClick={() => {
+              router.push('/submission');
+            }}
+          >
+            Make a Submission
+          </Button>
         </div>
-    </main>
+      </div>
+    </div>
   );
 }
-

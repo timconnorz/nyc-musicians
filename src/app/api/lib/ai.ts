@@ -1,34 +1,32 @@
-import { anthropic } from "@ai-sdk/anthropic";
+import { anthropic } from '@ai-sdk/anthropic';
 import { generateObject } from 'ai';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseServiceRoleClient } from '@/app/api/lib/supabaseBE';
 import { Database } from '@/types';
 import { z } from 'zod';
 
-type Submission = Database['public']['Tables']['submissions']['Row']
+type Submission = Database['public']['Tables']['submissions']['Row'];
 
 export async function assessSubmission(submission: Submission) {
-
-  console.log('Assessing submission:', submission)
+  console.log('Assessing submission:', submission);
 
   const { object } = await generateObject({
-    model: anthropic("claude-3-haiku-20240307"),
+    model: anthropic('claude-3-haiku-20240307'),
     prompt: prompt + JSON.stringify(submission),
     schema: z.object({
-      approved: z.boolean()
-    })
-  })
+      approved: z.boolean(),
+    }),
+  });
 
-  console.log('Anthropic response:', object)
+  console.log('Anthropic response:', object);
 
   // Update the row in supabase
-  const { error } = await supabase
-  .from('submissions')
-  .update({ approved: object.approved })
-  .eq('id', submission.id)
+  const { error } = await getSupabaseServiceRoleClient()
+    .from('submissions')
+    .update({ approved: object.approved })
+    .eq('id', submission.id);
 
   if (error) throw error;
 }
-
 
 const prompt = `
   You are a classifying tool tasked with classifying user submissions into one of two categories: "approved" or "rejected".
@@ -46,4 +44,4 @@ const prompt = `
 
   Here is the submission:
 
-`
+`;
