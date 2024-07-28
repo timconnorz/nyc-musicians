@@ -19,6 +19,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { APP_URL } from '@/constants';
+import { useToast } from '@/components/ui/use-toast';
 
 const formSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -26,6 +27,7 @@ const formSchema = z.object({
 
 export default function SignUpForm() {
   const [isSubmitted, setIsSubmitted] = React.useState(false);
+  const toast = useToast();
 
   // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
@@ -49,16 +51,33 @@ export default function SignUpForm() {
         console.log('Sign up successful');
         form.reset(); // Reset the form
         setIsSubmitted(true);
+
+        // Add to Resend audience
+        fetch('/api/sign-up', {
+          method: 'POST',
+          body: JSON.stringify({ email: values.email }),
+        }).catch(error => {
+          console.error('Error adding to Resend audience:', error);
+          toast.toast({
+            title: 'Error signing up',
+            description: 'Please try again',
+            variant: 'destructive',
+          });
+        });
+
         jsConfetti?.addConfetti({
           emojis: ['🌈', '⚡️', '💥', '✨', '💫', '🌸'],
         });
       } else {
-        console.error('Sign up failed');
-        // Handle errors, show error message to user
+        throw new Error('Sign up failed');
       }
     } catch (error) {
       console.error('Error signing up:', error);
-      // Handle network errors
+      toast.toast({
+        title: 'Error signing up',
+        description: 'Please try again',
+        variant: 'destructive',
+      });
     }
   }
 
