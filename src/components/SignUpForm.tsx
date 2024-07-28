@@ -53,12 +53,6 @@ export default function SignUpForm() {
       form.reset();
       setIsSubmitted(true);
 
-      // Add to Resend audience
-      await fetch('/api/sign-up', {
-        method: 'POST',
-        body: JSON.stringify({ email: values.email }),
-      });
-
       console.log('Email verification sent');
     } catch (error) {
       console.error('Error signing up:', error);

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import jsConfetti from '@/lib/confetti';
 import { getSupabaseAnonClient } from '@/lib/supabaseFE';
+import { toast } from 'sonner';
 
 export default function SignUp() {
   const router = useRouter();
@@ -19,13 +20,24 @@ export default function SignUp() {
    */
   useEffect(() => {
     async function checkUser() {
-      const session = await getSupabaseAnonClient().auth.getSession();
-      if (!session) {
-        router.push('/');
-      } else {
-        jsConfetti?.addConfetti({
-          emojis: ['🌈', '⚡️', '💥', '✨', '💫', '🌸'],
-        });
+      try {
+        const session = await getSupabaseAnonClient().auth.getSession();
+        if (!session) {
+          router.push('/');
+        } else if (session.data.session?.user?.email) {
+          // Add to Resend audience
+          await fetch('/api/sign-up', {
+            method: 'POST',
+            body: JSON.stringify({ email: session.data.session?.user?.email }),
+          });
+
+          jsConfetti?.addConfetti({
+            emojis: ['🌈', '⚡️', '💥', '✨', '💫', '🌸'],
+          });
+        }
+      } catch (error) {
+        console.error(error);
+        toast.error('Something went wrong');
       }
     }
     checkUser();
