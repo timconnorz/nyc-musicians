@@ -12,3 +12,6 @@ export const getResend = () => {
   }
   return resend;
 };
+
+export const fromString =
+  'NYC Musicians Wanted <updates.nycmusicianswanted.com>';
