@@ -18,7 +18,6 @@ import jsConfetti from '@/lib/confetti';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { APP_URL } from '@/constants';
 import { useToast } from '@/components/ui/use-toast';
 
 const formSchema = z.object({
@@ -43,7 +42,7 @@ export default function SignUpForm() {
       const { data, error } = await getSupabaseAnonClient().auth.signInWithOtp({
         email: values.email,
         options: {
-          emailRedirectTo: `${APP_URL}/sign-up/success`,
+          emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/sign-up/success`,
         },
       });
 

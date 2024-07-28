@@ -12,7 +12,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
-import { APP_URL } from '@/constants';
 import { getSupabaseAnonClient } from '@/lib/supabaseFE';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -110,7 +109,7 @@ export default function SubmissionForm() {
           await getSupabaseAnonClient().auth.signInWithOtp({
             email: values.email,
             options: {
-              emailRedirectTo: `${APP_URL}/submission/success`,
+              emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/submission/success`,
             },
           });
         if (error) {
