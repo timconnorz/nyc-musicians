@@ -4,9 +4,21 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
+import { getSupabaseAnonClient } from '@/lib/supabaseFE';
 
 export default function Home() {
   const router = useRouter();
+
+  // print to console whether we are signed in
+  useEffect(() => {
+    async function checkSession() {
+      const {
+        data: { session },
+      } = await getSupabaseAnonClient().auth.getSession();
+      console.log(session ? 'Signed in' : 'Not signed in');
+    }
+    checkSession();
+  }, []);
 
   useEffect(() => {
     const url = new URL(window.location.href);
