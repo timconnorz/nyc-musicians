@@ -19,6 +19,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import { LoadingSpinner } from './ui/spinner';
 
 const formSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -81,7 +82,11 @@ export default function SignUpForm() {
                 </FormItem>
               )}
             />
-            <Button type='submit'>Submit</Button>
+            <Button type='submit'>
+              <div className='flex justify-center items-center w-16'>
+                {form.formState.isSubmitting ? <LoadingSpinner /> : 'Submit'}
+              </div>
+            </Button>
           </form>
         </Form>
       )}

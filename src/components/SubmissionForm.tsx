@@ -49,7 +49,6 @@ const sendSubmissionConfirmEmail = async (email: string) => {
 export default function SubmissionForm() {
   const router = useRouter();
   const [isSubmitted, setIsSubmitted] = React.useState(false);
-  const [isLoading, setIsLoading] = React.useState(false);
 
   // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
@@ -74,7 +73,6 @@ export default function SubmissionForm() {
 
   // 2. Define a submit handler.
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true);
     try {
       const [response, session] = await Promise.all([
         fetch('/api/submission', {
@@ -90,35 +88,34 @@ export default function SubmissionForm() {
       if (response.ok) {
         // If the signed in email matches the email in the form, then we're good to go
         if (session?.data.session?.user.email === values.email) {
-          form.reset();
-          setIsLoading(false);
           await sendSubmissionConfirmEmail(values.email);
 
           // send email without waiting for response
           sendSubmissionConfirmEmail(values.email);
 
           router.push('/submission/success');
+          form.reset();
         }
 
-        setIsLoading(false);
-        form.reset();
-        setIsSubmitted(true);
-
-        const { error, data } =
-          await getSupabaseAnonClient().auth.signInWithOtp({
-            email: values.email,
-            options: {
-              emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/submission/success`,
-            },
-          });
-        if (error) {
-          throw new Error('Error signing in');
+        // Otherwise we need to confirm the email
+        else {
+          setIsSubmitted(true);
+          const { error, data } =
+            await getSupabaseAnonClient().auth.signInWithOtp({
+              email: values.email,
+              options: {
+                emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/submission/success`,
+              },
+            });
+          form.reset();
+          if (error) {
+            throw new Error('Error signing in');
+          }
         }
       } else {
         throw new Error('Submission failed');
       }
     } catch (error) {
-      setIsLoading(false);
       toast.error('Error submitting form');
     }
   }
@@ -173,7 +170,9 @@ export default function SubmissionForm() {
               )}
             />
             <Button type='submit'>
-              {isLoading ? <LoadingSpinner /> : 'Submit'}
+              <div className='flex justify-center items-center w-16'>
+                {form.formState.isSubmitting ? <LoadingSpinner /> : 'Submit'}
+              </div>
             </Button>
           </form>
         </Form>
