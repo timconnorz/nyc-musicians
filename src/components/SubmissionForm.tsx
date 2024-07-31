@@ -60,16 +60,15 @@ const sendSubmissionConfirmEmail = async (email: string) => {
 export default function SubmissionForm() {
   const router = useRouter();
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [defaultValues, setDefaultValues] = useState<SubmissionFormData>({
-    email: '',
-    'one sentence headline': '',
-    details: '',
-  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     mode: 'onBlur',
-    defaultValues: defaultValues,
+    defaultValues: {
+      email: '',
+      'one sentence headline': '',
+      details: '',
+    },
   });
 
   useEffect(() => {
@@ -222,7 +221,7 @@ export default function SubmissionForm() {
                 />
                 <Button
                   type='submit'
-                  className='bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold py-2 px-4 rounded-full w-full text-base'
+                  className='w-full text-lg py-5 bg-green-500 hover:bg-green-400 text-black cursor-pointer'
                   disabled={form.formState.isSubmitting}
                 >
                   {form.formState.isSubmitting ? (

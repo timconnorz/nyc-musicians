@@ -80,7 +80,7 @@ export default function SignUpForm() {
           <p className='font-semibold text-white mb-4'>{signedInEmail}</p>
           <Button
             onClick={() => setIgnoreWarning(true)}
-            className='bg-[#1DB954] hover:bg-[#1ED760] text-zinc-900 font-bold my-4 py-4 px-4 rounded-full w-full'
+            className='w-full text-lg py-5 bg-green-500 hover:bg-green-400 text-black cursor-pointer'
           >
             Sign up with a different email
           </Button>
@@ -114,7 +114,7 @@ export default function SignUpForm() {
               />
               <Button
                 type='submit'
-                className='bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold py-2 px-4 rounded-full w-full text-base'
+                className='w-full text-lg py-5 bg-green-500 hover:bg-green-400 text-black cursor-pointer'
                 disabled={form.formState.isSubmitting}
               >
                 {form.formState.isSubmitting ? (
