@@ -4,7 +4,13 @@ interface SignUpConfirmedProps {}
 
 const SignUpConfirmed: React.FC<Readonly<SignUpConfirmedProps>> = () => (
   <div>
-    <h1>You've Signed Up!</h1>
+    <h3>Thanks for signing up!</h3>
+    <p>
+      You'll now receive our newsletter with the latest music opportunities in
+      NYC.
+    </p>
+    <p>--</p>
+    <a href='https://nycmusicianswanted.com'>NYC Musicians Wanted</a>
   </div>
 );
 

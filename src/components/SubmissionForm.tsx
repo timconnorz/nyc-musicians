@@ -1,28 +1,15 @@
 'use client';
-import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { z } from 'zod';
+import { useRouter } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
+import { isWebUri } from 'valid-url';
 import { toast } from 'sonner';
 import { getSupabaseAnonClient } from '@/lib/supabaseFE';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter } from 'next/navigation';
-import React, { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { isWebUri } from 'valid-url';
-import { z } from 'zod';
+import CustomForm from './CustomForm';
 import ConfirmEmail from './ConfirmEmail';
-import { LoadingSpinner } from './ui/spinner';
 
 const formSchema = z.object({
+  email: z.string().email('Invalid email address'),
   headline: z
     .string()
     .min(1)
@@ -33,8 +20,9 @@ const formSchema = z.object({
     .min(1)
     .max(500, { message: 'Must be less than 500 characters' })
     .refine(value => !isWebUri(value), { message: 'Links are not allowed' }),
-  email: z.string().email('Invalid email address'),
 });
+
+type SubmissionFormData = z.infer<typeof formSchema>;
 
 const sendSubmissionConfirmEmail = async (email: string) => {
   const response = await fetch('/api/send/submission-confirm', {
@@ -48,31 +36,27 @@ const sendSubmissionConfirmEmail = async (email: string) => {
 
 export default function SubmissionForm() {
   const router = useRouter();
-  const [isSubmitted, setIsSubmitted] = React.useState(false);
-
-  // 1. Define your form.
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      headline: '',
-      email: '',
-      body: '',
-    },
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [defaultValues, setDefaultValues] = useState<SubmissionFormData>({
+    email: '',
+    headline: '',
+    body: '',
   });
 
-  // Pre-fill the email field with the user's email if they are logged in
   useEffect(() => {
     async function checkUser() {
       const session = await getSupabaseAnonClient().auth.getSession();
-      if (session) {
-        form.setValue('email', session.data.session?.user.email || '');
+      if (session.data.session?.user.email) {
+        setDefaultValues(prev => ({
+          ...prev,
+          email: session.data.session?.user.email!,
+        }));
       }
     }
     checkUser();
   }, []);
 
-  // 2. Define a submit handler.
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const onSubmit = async (values: SubmissionFormData) => {
     try {
       const [response, session] = await Promise.all([
         fetch('/api/submission', {
@@ -93,21 +77,18 @@ export default function SubmissionForm() {
           // send email without waiting for response
           sendSubmissionConfirmEmail(values.email);
 
-          router.push('/submission/success');
-          form.reset();
+          router.push('/submission-success');
         }
 
         // Otherwise we need to confirm the email
         else {
           setIsSubmitted(true);
-          const { error, data } =
-            await getSupabaseAnonClient().auth.signInWithOtp({
-              email: values.email,
-              options: {
-                emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/submission/success`,
-              },
-            });
-          form.reset();
+          const { error } = await getSupabaseAnonClient().auth.signInWithOtp({
+            email: values.email,
+            options: {
+              emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/submission-success`,
+            },
+          });
           if (error) {
             throw new Error('Error signing in');
           }
@@ -118,64 +99,18 @@ export default function SubmissionForm() {
     } catch (error) {
       toast.error('Error submitting form');
     }
-  }
+  };
 
   return (
     <>
       {isSubmitted ? (
         <ConfirmEmail />
       ) : (
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
-            <FormField
-              control={form.control}
-              name='email'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input placeholder='' {...field} />
-                  </FormControl>
-                  <FormDescription></FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name='headline'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Headline</FormLabel>
-                  <FormControl>
-                    <Input placeholder='' {...field} />
-                  </FormControl>
-                  <FormDescription></FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name='body'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Body</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder='' {...field} />
-                  </FormControl>
-                  <FormDescription></FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type='submit'>
-              <div className='flex justify-center items-center w-16'>
-                {form.formState.isSubmitting ? <LoadingSpinner /> : 'Submit'}
-              </div>
-            </Button>
-          </form>
-        </Form>
+        <CustomForm<SubmissionFormData>
+          onSubmit={onSubmit}
+          schema={formSchema}
+          defaultValues={defaultValues}
+        />
       )}
     </>
   );

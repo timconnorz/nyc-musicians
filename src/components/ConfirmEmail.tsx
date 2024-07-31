@@ -1,21 +1,22 @@
 import React from 'react';
 
-interface SubmissionSuccessProps {}
+interface ConfirmEmailProps {}
 
-const SubmissionSuccess: React.FC<SubmissionSuccessProps> = () => {
+const ConfirmEmail: React.FC<ConfirmEmailProps> = () => {
   return (
     <div
-      className='bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative'
+      className='text-white px-6 py-8 rounded-lg shadow-lg relative'
       role='alert'
     >
-      <h1 className='font-bold my-2'>Confirm Your Email</h1>
-      <h3 className='block sm:inline'>
-        {
-          'Last step! Please confirm your email by clicking the link we just sent you.'
-        }
+      <h1 className='text-3xl font-bold mb-4 text-[#1DB954]'>
+        Confirm your email!
+      </h1>
+      <h3 className='text-lg text-[#B3B3B3] mb-6'>
+        Click the link we sent you to finish signing up. Check your spam folder
+        if you don't see it!
       </h3>
     </div>
   );
 };
 
-export default SubmissionSuccess;
+export default ConfirmEmail;
