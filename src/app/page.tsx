@@ -1,4 +1,5 @@
 'use client';
+import About from '@/components/About';
 import Rules from '@/components/Rules';
 import SignUpForm from '@/components/SignUpForm';
 import SubmissionForm from '@/components/SubmissionForm';
@@ -12,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { getSupabaseAnonClient } from '@/lib/supabaseFE';
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { toast } from 'sonner';
 
 export default function Home() {
@@ -42,16 +43,19 @@ export default function Home() {
   }, []);
 
   return (
-    <div className='flex flex-col items-center justify-center min-h-screen p-4 bg-black'>
-      <div className='w-full sm:w-72'>
+    <div className='flex flex-col items-center pt-28 sm:pt-0 sm:justify-center h-screen p-4 bg-black'>
+      <div className='w-auto max-w-96 sm:max-w-72'>
         <Image
           src='/logo-white.svg'
           alt='logo'
           width={200}
           height={200}
           priority
-          className='mx-auto mb-8'
+          className='mx-auto mb-4'
         />
+        <p className='text-[#b3b3b3] text-center mb-8 text-lg sm:text-md px-10 sm:px-0'>
+          A curated list of opportunities for musicians, sent weekly.
+        </p>
         <div className='space-y-4 flex flex-col items-center w-full'>
           <Dialog>
             <DialogTrigger asChild>
@@ -63,7 +67,7 @@ export default function Home() {
               </Button>
             </DialogTrigger>
             <DialogContent className='bg-[#121212] text-white border-[#282828]'>
-              <DialogHeader className='text-center flex flex-col items-center'>
+              <DialogHeader className='text-left flex flex-col items-center'>
                 <DialogTitle className='text-white mb-4'>Sign Up</DialogTitle>
                 <SignUpForm />
               </DialogHeader>
@@ -80,7 +84,7 @@ export default function Home() {
               </Button>
             </DialogTrigger>
             <DialogContent className='bg-[#121212] text-white border-[#282828]'>
-              <DialogHeader className='text-center flex flex-col items-center'>
+              <DialogHeader className='text-left flex flex-col items-center'>
                 <DialogTitle className='text-white mb-4'>
                   Make a Submission
                 </DialogTitle>
@@ -99,7 +103,7 @@ export default function Home() {
               </Button>
             </DialogTrigger>
             <DialogContent className='bg-[#121212] text-white border-[#282828]'>
-              <DialogHeader className='text-center flex flex-col items-center'>
+              <DialogHeader className='flex flex-col items-center'>
                 <DialogTitle className='text-white mb-4'>Rules</DialogTitle>
                 <Rules />
               </DialogHeader>
@@ -116,32 +120,9 @@ export default function Home() {
               </Button>
             </DialogTrigger>
             <DialogContent className='bg-[#121212] text-white border-[#282828]'>
-              <DialogHeader className='text-center flex flex-col items-center'>
+              <DialogHeader className='flex flex-col items-center'>
                 <DialogTitle className='text-white mb-4'>About</DialogTitle>
-                <div className='text-left w-full'>
-                  <p className='mb-4'>
-                    This newsletter is built for the musician community of NYC.
-                    It was born by necessity when the "NYC Musicians Wanted"
-                    group on{' '}
-                    <a
-                      href='https://www.facebook.com/groups/2021146228121097'
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      className='text-blue-400 hover:underline'
-                    >
-                      Facebook
-                    </a>{' '}
-                    became too large and noisy to moderate effectively.
-                  </p>
-                  <p>
-                    If you have any feedback or suggestions, please reach out to
-                    us at{' '}
-                    <a href='mailto:info@nyc-musicians-wanted.com'>
-                      info@nyc-musicians-wanted.com
-                    </a>
-                  </p>
-                  <p className='text-[#888] mt-4'>Last Updated Aug 1st 2024</p>
-                </div>
+                <About />
               </DialogHeader>
             </DialogContent>
           </Dialog>

@@ -54,7 +54,7 @@ export default function SignUpForm() {
   }, []);
 
   return (
-    <div>
+    <>
       {loading ? (
         <LoadingSpinner className='text-white mx-auto' />
       ) : isSubmitted ? (
@@ -77,6 +77,6 @@ export default function SignUpForm() {
           defaultValues={defaultValues}
         />
       )}
-    </div>
+    </>
   );
 }

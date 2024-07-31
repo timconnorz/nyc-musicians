@@ -38,7 +38,7 @@ const CustomForm = <T extends Record<string, any>>({
 
   return (
     <Form {...form}>
-      <div className='relative w-full sm:w-80 mx-auto'>
+      <div className='relative w-[80%] sm:w-80 mx-auto pt-5'>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
           className='space-y-6 w-full'
@@ -51,7 +51,7 @@ const CustomForm = <T extends Record<string, any>>({
                 name={fieldName as Path<T>}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className='text-[#b3b3b3]'>
+                    <FormLabel className='text-[#b3b3b3] text-base text-left'>
                       {fieldName.charAt(0).toUpperCase() + fieldName.slice(1)}
                     </FormLabel>
                     <FormControl>
@@ -59,18 +59,18 @@ const CustomForm = <T extends Record<string, any>>({
                         <Textarea
                           placeholder={`Enter your ${fieldName}`}
                           {...field}
-                          className='bg-[#282828] text-white border-[#535353] focus:border-[#1DB954] focus:ring-[#1DB954] w-full'
+                          className='bg-[#282828] text-white border-[#535353] focus:border-[#1DB954] focus:ring-[#1DB954] w-full text-base'
                         />
                       ) : (
                         <Input
                           placeholder={`Enter your ${fieldName}`}
                           {...field}
-                          className='bg-[#282828] text-white border-[#535353] focus:border-[#1DB954] focus:ring-[#1DB954] w-full'
+                          className='bg-[#282828] text-white border-[#535353] focus:border-[#1DB954] focus:ring-[#1DB954] w-full text-base'
                         />
                       )}
                     </FormControl>
-                    <FormDescription className='text-[#b3b3b3]'></FormDescription>
-                    <FormMessage className='text-[#1DB954]' />
+                    <FormDescription className='text-[#b3b3b3] text-base'></FormDescription>
+                    <FormMessage className='text-[#1DB954] text-base' />
                   </FormItem>
                 )}
               />
@@ -78,7 +78,7 @@ const CustomForm = <T extends Record<string, any>>({
           })}
           <Button
             type='submit'
-            className='bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold py-2 px-4 rounded-full w-full'
+            className='bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold py-2 px-4 rounded-full w-full text-base'
             disabled={form.formState.isSubmitting}
           >
             {form.formState.isSubmitting ? (
