@@ -1,12 +1,5 @@
 'use client';
-import { z } from 'zod';
-import { useRouter } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
-import { isWebUri } from 'valid-url';
-import { toast } from 'sonner';
-import { getSupabaseAnonClient } from '@/lib/supabaseFE';
-import CustomForm from './CustomForm';
-import ConfirmEmail from './ConfirmEmail';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -14,7 +7,29 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { getSupabaseAnonClient } from '@/lib/supabaseFE';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { isWebUri } from 'valid-url';
+import { z } from 'zod';
+import ConfirmEmail from './ConfirmEmail';
 import Rules from './Rules';
+import { LoadingSpinner } from './ui/spinner';
+import { Textarea } from '@/components/ui/textarea';
+
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 const formSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -51,18 +66,21 @@ export default function SubmissionForm() {
     details: '',
   });
 
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    mode: 'onBlur',
+    defaultValues: defaultValues,
+  });
+
   useEffect(() => {
     async function checkUser() {
       const session = await getSupabaseAnonClient().auth.getSession();
       if (session.data.session?.user.email) {
-        setDefaultValues(prev => ({
-          ...prev,
-          email: session.data.session?.user.email!,
-        }));
+        form.setValue('email', session.data.session.user.email);
       }
     }
     checkUser();
-  }, []);
+  }, [form]);
 
   const onSubmit = async (values: SubmissionFormData) => {
     try {
@@ -72,7 +90,11 @@ export default function SubmissionForm() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(values),
+          body: JSON.stringify({
+            email: values.email,
+            headline: values['one sentence headline'],
+            details: values.details,
+          }),
         }),
         getSupabaseAnonClient().auth.getSession(),
       ]);
@@ -132,11 +154,86 @@ export default function SubmissionForm() {
             }{' '}
             before submitting.
           </p>
-          <CustomForm<SubmissionFormData>
-            onSubmit={onSubmit}
-            schema={formSchema}
-            defaultValues={defaultValues}
-          />
+          <Form {...form}>
+            <div className='relative w-[80%] sm:w-80 mx-auto pt-5'>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className='space-y-6 w-full'
+              >
+                <FormField
+                  control={form.control}
+                  name='email'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className='text-[#b3b3b3] text-base text-left'>
+                        Email
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder='Enter your email'
+                          {...field}
+                          className='bg-[#282828] text-white border-[#535353] focus:border-[#1DB954] focus:ring-[#1DB954] w-full text-base'
+                        />
+                      </FormControl>
+                      <FormDescription className='text-[#b3b3b3] text-base'></FormDescription>
+                      <FormMessage className='text-[#1DB954] text-base' />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='one sentence headline'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className='text-[#b3b3b3] text-base text-left'>
+                        One Sentence Headline
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder='Enter your headline'
+                          {...field}
+                          className='bg-[#282828] text-white border-[#535353] focus:border-[#1DB954] focus:ring-[#1DB954] w-full text-base'
+                        />
+                      </FormControl>
+                      <FormDescription className='text-[#b3b3b3] text-base'></FormDescription>
+                      <FormMessage className='text-[#1DB954] text-base' />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='details'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className='text-[#b3b3b3] text-base text-left'>
+                        Details
+                      </FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder='Enter details'
+                          {...field}
+                          className='bg-[#282828] text-white border-[#535353] focus:border-[#1DB954] focus:ring-[#1DB954] w-full text-base'
+                        />
+                      </FormControl>
+                      <FormDescription className='text-[#b3b3b3] text-base'></FormDescription>
+                      <FormMessage className='text-[#1DB954] text-base' />
+                    </FormItem>
+                  )}
+                />
+                <Button
+                  type='submit'
+                  className='bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold py-2 px-4 rounded-full w-full text-base'
+                  disabled={form.formState.isSubmitting}
+                >
+                  {form.formState.isSubmitting ? (
+                    <LoadingSpinner className='text-black' />
+                  ) : (
+                    'Submit'
+                  )}
+                </Button>
+              </form>
+            </div>
+          </Form>
         </>
       )}
     </>

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseServiceRoleClient } from '@/app/api/lib/supabaseBE';
 import { getResend, fromString } from '@/app/api/lib/resend';
+import { Newsletter } from '@/components/emails/Newsletter';
 
 export async function GET(request: Request) {
   try {
@@ -28,6 +29,13 @@ export async function GET(request: Request) {
 
     if (error) throw error;
 
+    if (!submissions?.length) {
+      console.log('No submissions to send');
+      return NextResponse.json({
+        message: 'No submissions to send',
+      });
+    }
+
     console.log(`Found ${submissions?.length} submissions to send`);
 
     // Get the audience contacts
@@ -36,6 +44,13 @@ export async function GET(request: Request) {
       audienceId: '0b871675-693d-4d17-a8e4-f03dd16dcb51',
     });
     const contacts = data?.data || [];
+
+    if (!contacts?.length) {
+      console.log('No contacts to send to');
+      return NextResponse.json({
+        message: 'No contacts to send to',
+      });
+    }
 
     console.log(`Found ${contacts?.length} contacts to send to`);
 
@@ -51,19 +66,22 @@ export async function GET(request: Request) {
     const sends = [];
     for (let i = 0; i < contacts.length; i += 100) {
       const batch = contacts.slice(i, i + 100);
-
-      sends.push(console.log('SENDING BATCH (not really)', batch));
-
-      // // Send to batch
-      // sends.push(resend.batch.send(batch?.map((contact) => ({
-      //   to: contact.email,
-      //   from: fromString,
-      //   subject: `NYC Musicians Wanted: ${today}`,
-      //   react: <Newsletter />,
-      // }))).catch((error) => {
-      //   console.error('Error sending batch:', error);
-      //   failures++;
-      // }));
+      // Send to batch
+      sends.push(
+        resend.batch
+          .send(
+            batch?.map(contact => ({
+              to: contact.email,
+              from: fromString,
+              subject: `NYC Musicians Wanted: ${today}`,
+              react: Newsletter({ date: today, submissions }),
+            }))
+          )
+          .catch(error => {
+            console.error('Error sending batch:', error);
+            failures++;
+          })
+      );
     }
 
     // Wait for all sends to complete
@@ -80,8 +98,18 @@ export async function GET(request: Request) {
       );
     }
 
+    // Update the submissions sent_at values
+    await getSupabaseServiceRoleClient()
+      .from('submissions')
+      .update({ sent_at: new Date().toISOString() })
+      .in(
+        'id',
+        submissions.map(submission => submission.id)
+      );
+
+    console.log(`Successfully sent out ${submissions?.length} submissions`);
     return NextResponse.json({
-      message: 'Weekly cron job completed successfully',
+      message: `Cron Completed! Sent ${submissions?.length} submissions`,
     });
   } catch (error) {
     console.error('Error in weekly cron job:', error);
