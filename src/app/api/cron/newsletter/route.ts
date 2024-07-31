@@ -3,6 +3,9 @@ import { getSupabaseServiceRoleClient } from '@/app/api/lib/supabaseBE';
 import { getResend, fromString } from '@/app/api/lib/resend';
 import { Newsletter } from '@/components/emails/Newsletter';
 
+// Add this line to mark the route as dynamic so we can use the request object
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
     console.log('STARTING NEWSLETTER CRON JOB');
