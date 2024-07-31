@@ -7,17 +7,25 @@ import { toast } from 'sonner';
 import { getSupabaseAnonClient } from '@/lib/supabaseFE';
 import CustomForm from './CustomForm';
 import ConfirmEmail from './ConfirmEmail';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import Rules from './Rules';
 
 const formSchema = z.object({
   email: z.string().email('Invalid email address'),
-  headline: z
+  'one sentence headline': z
     .string()
-    .min(1)
+    .min(1, { message: 'Required' })
     .max(50, { message: 'Must be less than 50 characters' })
     .refine(value => !isWebUri(value), { message: 'Links are not allowed' }),
-  body: z
+  details: z
     .string()
-    .min(1)
+    .min(1, { message: 'Required' })
     .max(500, { message: 'Must be less than 500 characters' })
     .refine(value => !isWebUri(value), { message: 'Links are not allowed' }),
 });
@@ -39,8 +47,8 @@ export default function SubmissionForm() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [defaultValues, setDefaultValues] = useState<SubmissionFormData>({
     email: '',
-    headline: '',
-    body: '',
+    'one sentence headline': '',
+    details: '',
   });
 
   useEffect(() => {
@@ -106,11 +114,30 @@ export default function SubmissionForm() {
       {isSubmitted ? (
         <ConfirmEmail />
       ) : (
-        <CustomForm<SubmissionFormData>
-          onSubmit={onSubmit}
-          schema={formSchema}
-          defaultValues={defaultValues}
-        />
+        <>
+          <p className='text-center text-[#888] pb-4'>
+            Please consult{' '}
+            {
+              <Dialog>
+                <DialogTrigger asChild>
+                  <span className='underline cursor-pointer'>the rules</span>
+                </DialogTrigger>
+                <DialogContent className='bg-[#121212] text-white border-[#282828]'>
+                  <DialogHeader className='text-center flex flex-col items-center'>
+                    <DialogTitle className='text-white mb-4'>Rules</DialogTitle>
+                    <Rules />
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
+            }{' '}
+            before submitting.
+          </p>
+          <CustomForm<SubmissionFormData>
+            onSubmit={onSubmit}
+            schema={formSchema}
+            defaultValues={defaultValues}
+          />
+        </>
       )}
     </>
   );

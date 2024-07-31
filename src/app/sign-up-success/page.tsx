@@ -13,6 +13,20 @@ export default function SignUp() {
     router.push('/');
   };
 
+  // Show Error Toast if there is an error in the URL
+  useEffect(() => {
+    const url = new URL(window.location.href);
+
+    const hashParams = new URLSearchParams(url.hash.slice(1));
+    const error = hashParams.get('error');
+
+    if (error) {
+      const error_description = hashParams.get('error_description');
+      console.error(error, error_description);
+      toast.error(`Error: ${error_description}`);
+    }
+  }, []);
+
   /**
    * Check if the user is logged in, if not, redirect to the home page
    * If the user is logged in, show a confetti

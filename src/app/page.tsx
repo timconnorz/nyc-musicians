@@ -1,25 +1,21 @@
 'use client';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import Rules from '@/components/Rules';
+import SignUpForm from '@/components/SignUpForm';
+import SubmissionForm from '@/components/SubmissionForm';
 import { Button } from '@/components/ui/button';
-import { useEffect } from 'react';
-import { toast } from 'sonner';
-import { getSupabaseAnonClient } from '@/lib/supabaseFE';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import SignUpForm from '@/components/SignUpForm';
-import SubmissionForm from '@/components/SubmissionForm';
-import Rules from '@/components/Rules';
+import { getSupabaseAnonClient } from '@/lib/supabaseFE';
+import Image from 'next/image';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 export default function Home() {
-  const router = useRouter();
-
   // print to console whether we are signed in
   useEffect(() => {
     async function checkSession() {
@@ -31,6 +27,7 @@ export default function Home() {
     checkSession();
   }, []);
 
+  // Show Error Toast if there is an error in the URL
   useEffect(() => {
     const url = new URL(window.location.href);
 
@@ -121,7 +118,30 @@ export default function Home() {
             <DialogContent className='bg-[#121212] text-white border-[#282828]'>
               <DialogHeader className='text-center flex flex-col items-center'>
                 <DialogTitle className='text-white mb-4'>About</DialogTitle>
-                {/* Add about content here */}
+                <div className='text-left w-full'>
+                  <p className='mb-4'>
+                    This newsletter is built for the musician community of NYC.
+                    It was born by necessity when the "NYC Musicians Wanted"
+                    group on{' '}
+                    <a
+                      href='https://www.facebook.com/groups/2021146228121097'
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='text-blue-400 hover:underline'
+                    >
+                      Facebook
+                    </a>{' '}
+                    became too large and noisy to moderate effectively.
+                  </p>
+                  <p>
+                    If you have any feedback or suggestions, please reach out to
+                    us at{' '}
+                    <a href='mailto:info@nyc-musicians-wanted.com'>
+                      info@nyc-musicians-wanted.com
+                    </a>
+                  </p>
+                  <p className='text-[#888] mt-4'>Last Updated Aug 1st 2024</p>
+                </div>
               </DialogHeader>
             </DialogContent>
           </Dialog>
