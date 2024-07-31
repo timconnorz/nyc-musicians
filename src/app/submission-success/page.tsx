@@ -13,13 +13,10 @@ import jsConfetti from '@/lib/confetti';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 export default function Submission() {
   const router = useRouter();
-
-  const handleClose = () => {
-    router.push('/');
-  };
 
   useEffect(() => {
     async function checkUser() {
@@ -71,12 +68,13 @@ export default function Submission() {
               </p>
             </div>
 
-            <button
+            <Button
               onClick={() => router.push('/')}
-              className='mt-8 w-full bg-[#1DB954] hover:bg-[#1ED760] text-black font-bold py-3 px-4 rounded-full transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#1DB954] focus:ring-opacity-50'
+              variant='default'
+              className='mt-8 w-full text-lg py-5 bg-green-500 hover:bg-green-400 text-black cursor-pointer'
             >
               Back to Home
-            </button>
+            </Button>
           </div>
         </main>
       </div>
