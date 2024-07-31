@@ -4,14 +4,14 @@ import { assessSubmission } from '@/app/api/lib/ai';
 
 export async function POST(request: NextRequest) {
   try {
-    const requestData = await request.json();
+    const { headline, details, email } = await request.json();
 
-    console.log('Incoming data:', requestData);
+    console.log(`New submission from ${email}`);
 
     // Store the submission in Supabase
     const { error, data } = await getSupabaseServiceRoleClient()
       .from('submissions')
-      .insert({ submission: requestData, approved: true })
+      .insert({ headline, details, user_email: email })
       .select();
 
     if (error) throw error;

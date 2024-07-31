@@ -9,9 +9,11 @@ type Submission = Database['public']['Tables']['submissions']['Row'];
 export async function assessSubmission(submission: Submission) {
   console.log('Assessing submission:', submission);
 
+  const submissionString = `> Headline: ${submission.headline}\n> Details: ${submission.details}`;
+
   const { object } = await generateObject({
     model: anthropic('claude-3-haiku-20240307'),
-    prompt: prompt + JSON.stringify(submission),
+    prompt: prompt + submissionString,
     schema: z.object({
       approved: z.boolean(),
     }),

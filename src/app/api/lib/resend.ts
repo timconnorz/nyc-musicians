@@ -13,4 +13,4 @@ export const getResend = () => {
   return resend;
 };
 
-export const fromString = `NYC Musicians Wanted <newsletter@updates.nycmusicianswanted.com>`;
+export const fromString = `NYC Musicians Wanted <${process.env.RESEND_FROM_EMAIL}>`;
