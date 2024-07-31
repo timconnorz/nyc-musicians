@@ -1,6 +1,6 @@
 const About = () => {
   return (
-    <div className='text-left w-full p-8 text-gray-300'>
+    <div className='text-left w-full p-4 sm:p-8 text-gray-300'>
       <p className='mb-4'>
         This newsletter is built for the musician community of NYC. It was born
         by necessity when the "NYC Musicians Wanted" group on{' '}

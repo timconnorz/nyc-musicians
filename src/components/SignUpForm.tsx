@@ -87,7 +87,7 @@ export default function SignUpForm() {
         </div>
       ) : (
         <Form {...form}>
-          <div className='relative w-[80%] sm:w-80 mx-auto pt-5'>
+          <div className='relative w-full sm:w-80 mx-auto pt-5'>
             <form
               onSubmit={form.handleSubmit(onSubmit)}
               className='space-y-6 w-full'

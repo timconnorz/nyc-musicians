@@ -2,7 +2,7 @@ import React from 'react';
 
 const Rules = () => {
   return (
-    <div className='shadow-md rounded-lg p-8 max-w-2xl mx-auto text-white text-left'>
+    <div className='shadow-md rounded-lg p-4 sm:p-8 max-w-2xl mx-auto text-white text-left'>
       <p className='mb-4 text-md leading-relaxed text-gray-300'>
         We aim to provide a space for legitimate opportunities for musicians in
         New York City.{' '}
