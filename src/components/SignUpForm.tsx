@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import CodeForm from './CodeForm';
 import { LoadingSpinner } from './ui/spinner';
-
+import { newsletterSignUp, sendSignUpConfirmationEmail } from '@/app/actions';
 const formSchema = z.object({
   email: z.string().email('Invalid email address'),
 });
@@ -28,9 +28,6 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function SignUpForm() {
   const router = useRouter();
-  const [ignoreWarning, setIgnoreWarning] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [codeRequired, setCodeRequired] = useState(false);
 
@@ -40,18 +37,6 @@ export default function SignUpForm() {
       email: '',
     },
   });
-
-  // useEffect to get the session
-  useEffect(() => {
-    async function getSession() {
-      const session = await getSupabaseAnonClient().auth.getSession();
-      if (session.data.session?.user.email) {
-        setSessionEmail(session.data.session.user.email);
-      }
-      setIsLoading(false);
-    }
-    getSession();
-  }, []);
 
   async function signUpForNewsletter(email: string | null) {
     try {
@@ -74,24 +59,10 @@ export default function SignUpForm() {
       }
 
       // Add to Resend audience
-      await fetch('/api/sign-up', {
-        method: 'POST',
-        body: JSON.stringify({ email }),
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${jwt}`,
-        },
-      });
+      await newsletterSignUp(email);
 
       // Send sign up confirmation email
-      await fetch('/api/send/sign-up-confirm', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${jwt}`,
-        },
-        body: JSON.stringify({ email }),
-      });
+      await sendSignUpConfirmationEmail(email);
 
       router.push('/sign-up-success');
     } catch (error) {
@@ -132,9 +103,7 @@ export default function SignUpForm() {
     }
   };
 
-  return isLoading ? (
-    <LoadingSpinner />
-  ) : codeRequired ? (
+  return codeRequired ? (
     <CodeForm
       message='We sent a one time code to your inbox. Enter it here to finish signing up!'
       unverifiedEmail={unverifiedEmail}
@@ -142,18 +111,7 @@ export default function SignUpForm() {
     />
   ) : (
     <>
-      {sessionEmail && !ignoreWarning ? (
-        <div className='text-center text-[#b3b3b3]'>
-          <p className='mb-2'>You're already signed up with:</p>
-          <p className='font-semibold mb-12'>{sessionEmail}</p>
-          <Button
-            onClick={() => setIgnoreWarning(true)}
-            className='w-full text-lg py-5 bg-green-500 hover:bg-green-400 text-black cursor-pointer'
-          >
-            Sign up with a different email
-          </Button>
-        </div>
-      ) : (
+      {
         <Form {...form}>
           <div className='relative w-full sm:w-80 mx-auto pt-5'>
             <form
@@ -194,7 +152,7 @@ export default function SignUpForm() {
             </form>
           </div>
         </Form>
-      )}
+      }
     </>
   );
 }

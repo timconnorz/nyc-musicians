@@ -60,8 +60,10 @@ export default function CodeForm({
       // Call the callback function
       await callback();
     } catch (error) {
-      console.error('Error signing up:', error);
-      toast.error('Error signing up');
+      console.error('Error', error);
+      toast.error('Error', {
+        description: `Error: ${error}`,
+      });
     }
   }
 

@@ -30,7 +30,10 @@ import CodeForm from './CodeForm';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { useEffect } from 'react';
-
+import {
+  submitSubmission,
+  sendSubmissionConfirmationEmail,
+} from '@/app/actions';
 const formSchema = z.object({
   email: z.string().email('Invalid email address'),
   'one sentence headline': z
@@ -80,11 +83,6 @@ export default function SubmissionForm() {
     const {
       data: { session },
     } = await getSupabaseAnonClient().auth.getSession();
-    const jwt = session?.access_token;
-
-    if (!jwt) {
-      throw new Error('No session token found');
-    }
 
     if (!session?.user.email) {
       throw new Error('No user email found');
@@ -98,32 +96,19 @@ export default function SubmissionForm() {
       throw new Error('user_email does not match session email');
     }
 
-    const response = await fetch('/api/submission', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${jwt}`,
-      },
-      body: JSON.stringify({
-        email: submission.email.trim(),
-        headline: submission['one sentence headline'],
-        details: submission.details,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to submit');
+    try {
+      await submitSubmission(
+        submission.email.trim(),
+        submission['one sentence headline'],
+        submission.details
+      );
+    } catch (error) {
+      console.error('Error submitting:', error);
+      toast.error('Error submitting');
     }
 
-    // Send email to user with submission confirmation without waiting for response
-    fetch('/api/send/submission-confirm', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${jwt}`,
-      },
-      body: JSON.stringify({ email: submission.email }),
-    });
+    // Send email to user with submission confirmation
+    await sendSubmissionConfirmationEmail(submission.email);
 
     // Reroute to /submission-success
     router.push('/submission-success');
