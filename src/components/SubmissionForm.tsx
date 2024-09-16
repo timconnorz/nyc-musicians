@@ -27,7 +27,6 @@ import { z } from 'zod';
 import Rules from './Rules';
 import { LoadingSpinner } from './ui/spinner';
 import CodeForm from './CodeForm';
-import { useGlobalContext } from '@/GlobalContext';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { useEffect } from 'react';
@@ -49,7 +48,6 @@ const formSchema = z.object({
 type SubmissionFormData = z.infer<typeof formSchema>;
 
 export default function SubmissionForm() {
-  const { dispatch } = useGlobalContext();
   const [codeRequired, setCodeRequired] = useState(false);
   const [pendingSubmission, setPendingSubmission] =
     useState<SubmissionFormData | null>(null);

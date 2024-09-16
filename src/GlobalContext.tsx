@@ -1,10 +1,7 @@
 'use client';
 import React, { createContext, ReactNode, useContext, useReducer } from 'react';
 
-interface State {
-  sessionEmail: string | null;
-  unverifiedEmail: string | null;
-}
+interface State {}
 
 interface Action {
   type: string;
