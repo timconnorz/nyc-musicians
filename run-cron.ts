@@ -43,8 +43,6 @@ if (!cronKey) {
   process.exit(1);
 }
 
-url.searchParams.append('CRON_KEY', cronKey);
-
 // Use http for localhost, https for other URLs
 const protocol = url.hostname === 'localhost' ? http : https;
 
