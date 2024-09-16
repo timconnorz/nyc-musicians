@@ -16,7 +16,13 @@ const envPath =
 
 if (envPath) {
   console.log('Loading .env file from:', envPath);
-  dotenv.config({ path: envPath });
+  const result = dotenv.config({ path: envPath });
+  if (result.error) {
+    console.error('Error loading .env file:', result.error.message);
+    process.exit(1);
+  } else {
+    console.log('.env file loaded successfully');
+  }
 } else {
   console.log('Running in production mode, using environment variables');
 }
@@ -26,6 +32,7 @@ if (!baseUrl) {
   console.error('Error: NEXT_PUBLIC_APP_URL is not defined in the environment');
   process.exit(1);
 }
+console.log('Base URL:', baseUrl);
 
 const url = new URL(`${baseUrl}/api/cron/newsletter`);
 
@@ -41,7 +48,7 @@ url.searchParams.append('CRON_KEY', cronKey);
 const protocol = url.hostname === 'localhost' ? http : https;
 
 protocol
-  .get(url.toString(), res => {
+  .request(url.toString(), { method: 'POST' }, res => {
     let data = '';
     res.on('data', chunk => (data += chunk));
     res.on('end', () => {
@@ -52,4 +59,5 @@ protocol
       }
     });
   })
-  .on('error', err => console.error('Error:', err.message));
+  .on('error', err => console.error('Error during request:', err))
+  .end();
