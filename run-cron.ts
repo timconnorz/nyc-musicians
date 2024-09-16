@@ -3,6 +3,7 @@ import http from 'http';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
+import { NextResponse } from 'next/server';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -48,16 +49,20 @@ url.searchParams.append('CRON_KEY', cronKey);
 const protocol = url.hostname === 'localhost' ? http : https;
 
 protocol
-  .request(url.toString(), { method: 'POST' }, res => {
-    let data = '';
-    res.on('data', chunk => (data += chunk));
-    res.on('end', () => {
-      try {
-        console.log(JSON.parse(data));
-      } catch (error) {
-        console.error('Error parsing response:', data);
-      }
-    });
-  })
+  .request(
+    url.toString(),
+    { method: 'POST', headers: { Authorization: `Bearer ${cronKey}` } },
+    res => {
+      let data = '';
+      res.on('data', chunk => (data += chunk));
+      res.on('end', () => {
+        try {
+          console.log(JSON.parse(data));
+        } catch (error) {
+          console.error('Error parsing response:', data);
+        }
+      });
+    }
+  )
   .on('error', err => console.error('Error during request:', err))
   .end();
