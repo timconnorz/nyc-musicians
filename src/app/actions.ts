@@ -1,9 +1,8 @@
-// use
-// TODO: Migrate api endpoints to server actions
+'use server';
 
-import { assessSubmission } from './api/lib/ai';
-import { getSupabaseServiceRoleClient } from './api/lib/supabaseBE';
-import { getResend, fromString } from './api/lib/resend';
+import { assessSubmission } from '../lib/server/ai';
+import { getSupabaseServiceRoleClient } from '../lib/server/supabaseBE';
+import { getResend, fromString } from '../lib/server/resend';
 import SubmissionConfirmed from '@/components/emails/SubmissionConfirmed';
 import SignUpConfirmed from '@/components/emails/SignUpConfirmed';
 

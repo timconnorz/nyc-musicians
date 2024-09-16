@@ -8,8 +8,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { getSupabaseAnonClient } from '@/lib/supabaseFE';
-import jsConfetti from '@/lib/confetti';
+import { getSupabaseAnonClient } from '@/lib/client/supabaseFE';
+import jsConfetti from '@/lib/client/confetti';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { toast } from 'sonner';

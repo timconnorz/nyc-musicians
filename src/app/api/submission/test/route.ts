@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseServiceRoleClient } from '@/app/api/lib/supabaseBE';
-import { assessSubmission } from '@/app/api/lib/ai';
+import { getSupabaseServiceRoleClient } from '@/lib/server/supabaseBE';
+import { assessSubmission } from '@/lib/server/ai';
 export async function POST(request: Request) {
   try {
     // verify CRON_KEY in authorization header

@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { getSupabaseAnonClient } from '@/lib/supabaseFE';
+import { getSupabaseAnonClient } from '@/lib/client/supabaseFE';
 import Image from 'next/image';
 import { useEffect } from 'react';
 import { toast } from 'sonner';

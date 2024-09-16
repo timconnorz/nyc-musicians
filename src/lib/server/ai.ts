@@ -1,6 +1,6 @@
 import { anthropic } from '@ai-sdk/anthropic';
 import { generateObject } from 'ai';
-import { getSupabaseServiceRoleClient } from '@/app/api/lib/supabaseBE';
+import { getSupabaseServiceRoleClient } from '@/lib/server/supabaseBE';
 import { Database } from '@/generated-types';
 import { z } from 'zod';
 

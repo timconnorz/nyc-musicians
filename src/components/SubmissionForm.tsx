@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { getSupabaseAnonClient } from '@/lib/supabaseFE';
+import { getSupabaseAnonClient } from '@/lib/client/supabaseFE';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';

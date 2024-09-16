@@ -10,7 +10,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { getSupabaseAnonClient } from '@/lib/supabaseFE';
+import { getSupabaseAnonClient } from '@/lib/client/supabaseFE';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseServiceRoleClient } from '@/app/api/lib/supabaseBE';
-import { getResend, fromString } from '@/app/api/lib/resend';
+import { getSupabaseServiceRoleClient } from '@/lib/server/supabaseBE';
+import { getResend, fromString } from '@/lib/server/resend';
 import { Newsletter } from '@/components/emails/Newsletter';
 
 export async function POST(request: Request) {
