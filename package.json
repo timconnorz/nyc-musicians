@@ -1,12 +1,12 @@
 {
   "name": "nyc-musicians",
-  "type": "module",
+  "type": "commonjs",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "cron:newsletter": "tsx ./run-cron.ts",
-    "gen-types": "npx supabase gen types --lang=typescript --project-id 'zthtfqxgymwxjzrmojte' --schema public > src/types.ts",
+    "gen-types": "npx supabase gen types --lang=typescript --project-id 'zthtfqxgymwxjzrmojte' --schema public > src/generated-types.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

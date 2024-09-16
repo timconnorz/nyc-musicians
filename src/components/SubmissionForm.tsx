@@ -17,19 +17,20 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { getSupabaseAnonClient } from '@/lib/supabaseFE';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { isWebUri } from 'valid-url';
 import { z } from 'zod';
-import ConfirmEmail from './ConfirmEmail';
 import Rules from './Rules';
 import { LoadingSpinner } from './ui/spinner';
-import { Textarea } from '@/components/ui/textarea';
-
-import { useForm } from 'react-hook-form';
+import CodeForm from './CodeForm';
+import { useGlobalContext } from '@/GlobalContext';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { useEffect } from 'react';
 
 const formSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -47,19 +48,13 @@ const formSchema = z.object({
 
 type SubmissionFormData = z.infer<typeof formSchema>;
 
-const sendSubmissionConfirmEmail = async (email: string) => {
-  const response = await fetch('/api/send/submission-confirm', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ email }),
-  });
-};
-
 export default function SubmissionForm() {
+  const { dispatch } = useGlobalContext();
+  const [codeRequired, setCodeRequired] = useState(false);
+  const [pendingSubmission, setPendingSubmission] =
+    useState<SubmissionFormData | null>(null);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const router = useRouter();
-  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -71,170 +66,209 @@ export default function SubmissionForm() {
     },
   });
 
+  // Use useEffect to set the email value
   useEffect(() => {
-    async function checkUser() {
+    async function setFormEmail() {
       const session = await getSupabaseAnonClient().auth.getSession();
       if (session.data.session?.user.email) {
         form.setValue('email', session.data.session.user.email);
       }
     }
-    checkUser();
-  }, [form]);
+    setFormEmail();
+  }, []);
+
+  const sendSubmission = async (submission: SubmissionFormData | null) => {
+    // Get the session again to make sure it's still valid
+    const {
+      data: { session },
+    } = await getSupabaseAnonClient().auth.getSession();
+    const jwt = session?.access_token;
+
+    if (!jwt) {
+      throw new Error('No session token found');
+    }
+
+    if (!session?.user.email) {
+      throw new Error('No user email found');
+    }
+
+    if (!submission) {
+      throw new Error('No submission');
+    }
+
+    if (submission.email !== session.user.email) {
+      throw new Error('user_email does not match session email');
+    }
+
+    const response = await fetch('/api/submission', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${jwt}`,
+      },
+      body: JSON.stringify({
+        email: submission.email.trim(),
+        headline: submission['one sentence headline'],
+        details: submission.details,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to submit');
+    }
+
+    // Send email to user with submission confirmation without waiting for response
+    fetch('/api/send/submission-confirm', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${jwt}`,
+      },
+      body: JSON.stringify({ email: submission.email }),
+    });
+
+    // Reroute to /submission-success
+    router.push('/submission-success');
+  };
 
   const onSubmit = async (values: SubmissionFormData) => {
     try {
-      const [response, session] = await Promise.all([
-        fetch('/api/submission', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: values.email,
-            headline: values['one sentence headline'],
-            details: values.details,
-          }),
-        }),
-        getSupabaseAnonClient().auth.getSession(),
-      ]);
+      const {
+        data: { session },
+      } = await getSupabaseAnonClient().auth.getSession();
 
-      if (response.ok) {
-        // If the signed in email matches the email in the form, then we're good to go
-        if (session?.data.session?.user.email === values.email) {
-          await sendSubmissionConfirmEmail(values.email);
-
-          // send email without waiting for response
-          sendSubmissionConfirmEmail(values.email);
-
-          router.push('/submission-success');
-        }
-
-        // Otherwise we need to confirm the email
-        else {
-          setIsSubmitted(true);
-          const { error } = await getSupabaseAnonClient().auth.signInWithOtp({
-            email: values.email,
-            options: {
-              emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/submission-success`,
-            },
-          });
-          if (error) {
-            throw new Error('Error signing in');
-          }
-        }
-      } else {
-        throw new Error('Submission failed');
+      // If the signed in email matches the email in the form, then we're good to go
+      if (session?.user.email && session.user.email === values.email) {
+        await sendSubmission(values);
+        return;
       }
+
+      setPendingSubmission(values);
+      setUnverifiedEmail(values.email.trim());
+
+      // Send a one time code to the users inbox
+      const { error: signInError } =
+        await getSupabaseAnonClient().auth.signInWithOtp({
+          email: values.email.trim(),
+          options: {
+            shouldCreateUser: true,
+          },
+        });
+
+      if (signInError) throw signInError;
+
+      setCodeRequired(true);
     } catch (error) {
-      toast.error('Error submitting form');
+      console.error('Error submitting:', error);
+      toast.error('Error submitting');
     }
   };
 
-  return (
+  return codeRequired ? (
+    <CodeForm
+      message='We sent a one time code to your inbox. Enter it here to finalize your submission'
+      unverifiedEmail={unverifiedEmail}
+      callback={() => sendSubmission(pendingSubmission)}
+    />
+  ) : (
     <>
-      {isSubmitted ? (
-        <ConfirmEmail />
-      ) : (
-        <>
-          <p className='text-center text-[#888] pb-4'>
-            Please consult{' '}
-            {
-              <Dialog>
-                <DialogTrigger asChild>
-                  <span className='underline cursor-pointer'>the rules</span>
-                </DialogTrigger>
-                <DialogContent className='bg-[#121212] text-white border-[#282828]'>
-                  <DialogHeader className='text-center flex flex-col items-center'>
-                    <DialogTitle className='text-white mb-4'>Rules</DialogTitle>
-                    <Rules />
-                  </DialogHeader>
-                </DialogContent>
-              </Dialog>
-            }{' '}
-            before submitting.
-          </p>
-          <Form {...form}>
-            <div className='relative w-full sm:w-80 mx-auto pt-5'>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className='space-y-6 w-full'
-              >
-                <FormField
-                  control={form.control}
-                  name='email'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className='text-[#b3b3b3] text-base text-left'>
-                        Email
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder='Enter your email'
-                          {...field}
-                          className='bg-[#282828] text-white border-[#535353] focus:border-[#1DB954] focus:ring-[#1DB954] w-full text-base'
-                        />
-                      </FormControl>
-                      <FormDescription className='text-[#b3b3b3] text-base'></FormDescription>
-                      <FormMessage className='text-[#1DB954] text-base' />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name='one sentence headline'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className='text-[#b3b3b3] text-base text-left'>
-                        One Sentence Headline
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder='Enter your headline'
-                          {...field}
-                          className='bg-[#282828] text-white border-[#535353] focus:border-[#1DB954] focus:ring-[#1DB954] w-full text-base'
-                        />
-                      </FormControl>
-                      <FormDescription className='text-[#b3b3b3] text-base'></FormDescription>
-                      <FormMessage className='text-[#1DB954] text-base' />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name='details'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className='text-[#b3b3b3] text-base text-left'>
-                        Details
-                      </FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder='Enter details'
-                          {...field}
-                          className='bg-[#282828] text-white border-[#535353] focus:border-[#1DB954] focus:ring-[#1DB954] w-full text-base'
-                        />
-                      </FormControl>
-                      <FormDescription className='text-[#b3b3b3] text-base'></FormDescription>
-                      <FormMessage className='text-[#1DB954] text-base' />
-                    </FormItem>
-                  )}
-                />
-                <Button
-                  type='submit'
-                  className='w-full text-lg py-5 bg-green-500 hover:bg-green-400 text-black cursor-pointer'
-                  disabled={form.formState.isSubmitting}
-                >
-                  {form.formState.isSubmitting ? (
-                    <LoadingSpinner className='text-black' />
-                  ) : (
-                    'Submit'
-                  )}
-                </Button>
-              </form>
-            </div>
-          </Form>
-        </>
-      )}
+      <p className='text-center text-[#888] pb-4'>
+        Please consult{' '}
+        {
+          <Dialog>
+            <DialogTrigger asChild>
+              <span className='underline cursor-pointer'>the rules</span>
+            </DialogTrigger>
+            <DialogContent className='bg-[#121212] text-white border-[#282828]'>
+              <DialogHeader className='text-center flex flex-col items-center'>
+                <DialogTitle className='text-white mb-4'>Rules</DialogTitle>
+                <Rules />
+              </DialogHeader>
+            </DialogContent>
+          </Dialog>
+        }{' '}
+        before submitting.
+      </p>
+      <Form {...form}>
+        <div className='relative w-full sm:w-80 mx-auto pt-5'>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className='space-y-6 w-full'
+          >
+            <FormField
+              control={form.control}
+              name='email'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className='text-[#b3b3b3] text-base text-left'>
+                    Email
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder='Enter your email'
+                      {...field}
+                      className='bg-[#282828] text-white border-[#535353] focus:border-[#1DB954] focus:ring-[#1DB954] w-full text-base'
+                    />
+                  </FormControl>
+                  <FormDescription className='text-[#b3b3b3] text-base'></FormDescription>
+                  <FormMessage className='text-[#1DB954] text-base' />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='one sentence headline'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className='text-[#b3b3b3] text-base text-left'>
+                    One Sentence Headline
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder='Enter your headline'
+                      {...field}
+                      className='bg-[#282828] text-white border-[#535353] focus:border-[#1DB954] focus:ring-[#1DB954] w-full text-base'
+                    />
+                  </FormControl>
+                  <FormDescription className='text-[#b3b3b3] text-base'></FormDescription>
+                  <FormMessage className='text-[#1DB954] text-base' />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='details'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className='text-[#b3b3b3] text-base text-left'>
+                    Details
+                  </FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder='Enter details'
+                      {...field}
+                      className='bg-[#282828] text-white border-[#535353] focus:border-[#1DB954] focus:ring-[#1DB954] w-full text-base'
+                    />
+                  </FormControl>
+                  <FormDescription className='text-[#b3b3b3] text-base'></FormDescription>
+                  <FormMessage className='text-[#1DB954] text-base' />
+                </FormItem>
+              )}
+            />
+            <Button
+              type='submit'
+              className='w-full text-lg py-5 bg-green-500 hover:bg-green-400 text-black cursor-pointer'
+              disabled={form.formState.isSubmitting}
+            >
+              {form.formState.isSubmitting ? (
+                <LoadingSpinner className='text-black' />
+              ) : (
+                'Submit'
+              )}
+            </Button>
+          </form>
+        </div>
+      </Form>
     </>
   );
 }

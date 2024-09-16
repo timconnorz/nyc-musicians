@@ -15,17 +15,17 @@ import { getSupabaseAnonClient } from '@/lib/supabaseFE';
 import Image from 'next/image';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
-
+import { useCheckUser } from '@/useCheckUser';
 export default function Home() {
-  // print to console whether we are signed in
+  // print the user's email to the console if they are signed in
   useEffect(() => {
-    async function checkSession() {
-      const {
-        data: { session },
-      } = await getSupabaseAnonClient().auth.getSession();
-      console.log(session ? 'Signed in' : 'Not signed in');
+    async function checkUser() {
+      const session = await getSupabaseAnonClient().auth.getSession();
+      if (session.data.session?.user.email) {
+        console.log(`Signed in as ${session.data.session.user.email}`);
+      }
     }
-    checkSession();
+    checkUser();
   }, []);
 
   // Show Error Toast if there is an error in the URL
@@ -43,7 +43,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className='flex flex-col items-center pt-28 sm:pt-0 sm:justify-center h-screen p-4 bg-black'>
+    <div className='flex flex-col items-center pt-[15%] mb-10 sm:pt-0 sm:justify-center h-screen p-4 bg-black'>
       <div className='w-auto max-w-96 sm:max-w-72'>
         <Image
           src='/logo-white.svg'

@@ -20,7 +20,7 @@ const About = () => {
           info@nyc-musicians-wanted.com
         </a>
       </p>
-      <p className='text-[#888] mt-4'>Last Updated Aug 1st 2024</p>
+      <p className='text-[#888] mt-4'>Site Last Updated Sep 16 2024</p>
     </div>
   );
 };

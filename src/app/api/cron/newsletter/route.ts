@@ -3,17 +3,13 @@ import { getSupabaseServiceRoleClient } from '@/app/api/lib/supabaseBE';
 import { getResend, fromString } from '@/app/api/lib/resend';
 import { Newsletter } from '@/components/emails/Newsletter';
 
-// Add this line to mark the route as dynamic so we can use the request object
-export const dynamic = 'force-dynamic';
-
-export async function GET(request: Request) {
+export async function POST(request: Request) {
   try {
     console.log('STARTING NEWSLETTER CRON JOB');
 
-    // verify CRON_KEY in request
-    const { searchParams } = new URL(request.url);
-    const CRON_KEY = searchParams.get('CRON_KEY');
-    if (CRON_KEY !== process.env.CRON_KEY) {
+    // verify CRON_KEY in authorization header
+    const authorization = request.headers.get('Authorization');
+    if (!authorization || authorization !== `Bearer ${process.env.CRON_KEY}`) {
       return NextResponse.json(
         {
           message: 'Unauthorized',

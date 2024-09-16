@@ -1,7 +1,7 @@
 import { anthropic } from '@ai-sdk/anthropic';
 import { generateObject } from 'ai';
 import { getSupabaseServiceRoleClient } from '@/app/api/lib/supabaseBE';
-import { Database } from '@/types';
+import { Database } from '@/generated-types';
 import { z } from 'zod';
 
 type Submission = Database['public']['Tables']['submissions']['Row'];
@@ -36,13 +36,19 @@ const prompt = `
   Your goal to approve all submissions that appear to be a genuine opportunity for a musician and reject everything else. 
   
   Examples of posts that should be approved:
-  - A post looking for a musician to play a gig
-  - A post looking for a musician to join a band
+  - A post by an event organizer looking for a musician to play a gig
+  - A post by an existing band looking for a new member
+  - A post by a musician looking for a band to join or a musician to collaborate with
   
   Examples of posts that should be rejected:
-  - Self-promotion of any kind
-  - A post looking for a musician to join a band
-  - Anything not relating to music 
+  - Generic promotions of music, merchandise, or events, including but not limited to:
+    - "check out my new song"
+    - "come to my show"
+    - "buy my album"
+    - "listen to my podcast"
+    - "watch my video"
+    - "follow me on social media"
+  - Anything not relating to music
 
   Here is the submission:
 

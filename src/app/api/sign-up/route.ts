@@ -1,7 +1,24 @@
 import { getResend } from '@/app/api/lib/resend';
+import { getSupabaseServiceRoleClient } from '@/app/api/lib/supabaseBE';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    // Check for the authorization header
+    const token = request.headers.get('Authorization')?.split(' ')[1];
+    if (!token) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Verify the token
+    const {
+      data: { user },
+      error: authError,
+    } = await getSupabaseServiceRoleClient().auth.getUser(token);
+    if (authError || !user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
     const requestData = await request.json();
 
     const { data, error } = await getResend().contacts.create({

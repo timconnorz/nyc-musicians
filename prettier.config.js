@@ -1,4 +1,4 @@
-// prettier.config.js
+// prettier.config.cjs
 module.exports = {
   semi: true,                // Add a semicolon at the end of statements
   singleQuote: true,         // Use single quotes instead of double quotes

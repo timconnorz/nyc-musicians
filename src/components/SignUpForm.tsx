@@ -11,15 +11,14 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { getSupabaseAnonClient } from '@/lib/supabaseFE';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Path } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import ConfirmEmail from './ConfirmEmail';
+import CodeForm from './CodeForm';
 import { LoadingSpinner } from './ui/spinner';
-import { Textarea } from './ui/textarea';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 
 const formSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -28,10 +27,12 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export default function SignUpForm() {
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [signedInEmail, setSignedInEmail] = useState<string | null>(null);
+  const router = useRouter();
   const [ignoreWarning, setIgnoreWarning] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [codeRequired, setCodeRequired] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -40,44 +41,111 @@ export default function SignUpForm() {
     },
   });
 
-  async function onSubmit(values: FormValues) {
+  // useEffect to get the session
+  useEffect(() => {
+    async function getSession() {
+      const session = await getSupabaseAnonClient().auth.getSession();
+      if (session.data.session?.user.email) {
+        setSessionEmail(session.data.session.user.email);
+      }
+      setIsLoading(false);
+    }
+    getSession();
+  }, []);
+
+  async function signUpForNewsletter(email: string | null) {
     try {
-      const { error: signInError } =
-        await getSupabaseAnonClient().auth.signInWithOtp({
-          email: values.email.trim(),
-          options: {
-            emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/sign-up-success`,
-          },
-        });
+      if (!email) {
+        throw new Error('No email provided');
+      }
 
-      if (signInError) throw signInError;
+      // Get the session again to make sure it's still valid
+      const {
+        data: { session },
+      } = await getSupabaseAnonClient().auth.getSession();
+      const jwt = session?.access_token;
 
-      setIsSubmitted(true);
+      if (!jwt) {
+        throw new Error('No session token found');
+      }
+
+      if (!session?.user.email) {
+        throw new Error('No user email found');
+      }
+
+      // Add to Resend audience
+      await fetch('/api/sign-up', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${jwt}`,
+        },
+      });
+
+      // Send sign up confirmation email
+      await fetch('/api/send/sign-up-confirm', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${jwt}`,
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      router.push('/sign-up-success');
     } catch (error) {
       console.error('Error signing up:', error);
       toast.error('Error signing up');
     }
   }
 
-  useEffect(() => {
-    async function checkUser() {
-      const session = await getSupabaseAnonClient().auth.getSession();
-      setSignedInEmail(session.data.session?.user.email || null);
-      setLoading(false);
-    }
-    checkUser();
-  }, []);
+  const onSubmit = async (values: FormValues) => {
+    try {
+      const {
+        data: { session },
+      } = await getSupabaseAnonClient().auth.getSession();
 
-  return (
+      // If the signed in email matches the email in the form, we're good to go
+      if (session?.user.email && session.user.email === values.email) {
+        await signUpForNewsletter(values.email);
+        return;
+      }
+
+      setUnverifiedEmail(values.email.trim());
+
+      // Send a one time code to the users inbox
+      const { error: signInError } =
+        await getSupabaseAnonClient().auth.signInWithOtp({
+          email: values.email.trim(),
+          options: {
+            shouldCreateUser: true,
+          },
+        });
+
+      if (signInError) throw signInError;
+
+      setCodeRequired(true);
+    } catch (error) {
+      console.error('Error signing up:', error);
+      toast.error('Error signing up');
+    }
+  };
+
+  return isLoading ? (
+    <LoadingSpinner />
+  ) : codeRequired ? (
+    <CodeForm
+      message='We sent a one time code to your inbox. Enter it here to finish signing up!'
+      unverifiedEmail={unverifiedEmail}
+      callback={() => signUpForNewsletter(unverifiedEmail)}
+    />
+  ) : (
     <>
-      {loading ? (
-        <LoadingSpinner className='text-white mx-auto' />
-      ) : isSubmitted ? (
-        <ConfirmEmail />
-      ) : signedInEmail && !ignoreWarning ? (
+      {sessionEmail && !ignoreWarning ? (
         <div className='text-center text-[#b3b3b3]'>
           <p className='mb-2'>You're already signed up with:</p>
-          <p className='font-semibold text-white mb-4'>{signedInEmail}</p>
+          <p className='font-semibold mb-12'>{sessionEmail}</p>
           <Button
             onClick={() => setIgnoreWarning(true)}
             className='w-full text-lg py-5 bg-green-500 hover:bg-green-400 text-black cursor-pointer'

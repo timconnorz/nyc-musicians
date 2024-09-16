@@ -15,15 +15,15 @@ const Rules = () => {
         <Section title='Good Examples'>
           <ul className='list-disc pl-5 text-gray-400'>
             <li>Posts seeking musicians for gigs</li>
-            <li>Opportunities to join bands</li>
+            <li>Opportunities to join bands or collaborate with other musicians</li>
             <li>Any genuine music-related opportunity</li>
           </ul>
         </Section>
         <Section title='Bad Examples'>
           <ul className='list-disc pl-5 text-gray-400'>
             <li>Self-promotion of any kind</li>
-            <li>Non-music related content</li>
-            <li>Spam or irrelevant posts</li>
+            <li>Posts that are not music-related</li>
+            <li>Spam or inappropiate content</li>
           </ul>
         </Section>
       </div>
