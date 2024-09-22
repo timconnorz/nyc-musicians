@@ -9,6 +9,10 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'NYC Musicians Wanted',
   description: 'A place for New York Musicians to find opportunities.',
+  metadataBase:
+    process.env.NODE_ENV === 'production'
+      ? new URL('https://nycmusicianswanted.com')
+      : undefined,
 };
 
 export default function RootLayout({
