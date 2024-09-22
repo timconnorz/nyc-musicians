@@ -24,7 +24,9 @@ export async function POST(request: Request) {
       .from('submissions')
       .select('*')
       .is('sent_at', null)
-      .eq('approved', true);
+      .eq('approved', true)
+      // oldest first
+      .order('created_at', { ascending: true });
 
     if (error) throw error;
 

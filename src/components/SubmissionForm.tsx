@@ -1,5 +1,6 @@
 'use client';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -46,6 +47,7 @@ const formSchema = z.object({
     .min(1, { message: 'Required' })
     .max(500, { message: 'Must be less than 500 characters' })
     .refine(value => !isWebUri(value), { message: 'Links are not allowed' }),
+  agreeToTerms: z.boolean().refine(value => value, { message: 'Required' }),
 });
 
 type SubmissionFormData = z.infer<typeof formSchema>;
@@ -64,6 +66,7 @@ export default function SubmissionForm() {
       email: '',
       'one sentence headline': '',
       details: '',
+      agreeToTerms: false,
     },
   });
 
@@ -149,7 +152,7 @@ export default function SubmissionForm() {
 
   return codeRequired ? (
     <CodeForm
-      message='We sent a one time code to your inbox. Enter it here to finalize your submission'
+      message={`We sent a one time code to ${unverifiedEmail}. Enter it here to finalize your submission`}
       unverifiedEmail={unverifiedEmail}
       callback={() => sendSubmission(pendingSubmission)}
     />
@@ -234,6 +237,26 @@ export default function SubmissionForm() {
                     />
                   </FormControl>
                   <FormDescription className='text-[#b3b3b3] text-base'></FormDescription>
+                  <FormMessage className='text-[#1DB954] text-base' />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='agreeToTerms'
+              render={({ field }) => (
+                <FormItem className='py-2'>
+                  <FormControl className='flex items-center'>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      className='bg-[#282828] text-white border-[#535353] focus:border-[#1DB954] focus:ring-[#1DB954] h-4 w-4 text-base mr-2 inline'
+                    />
+                  </FormControl>
+                  <FormDescription className='text-[#b3b3b3] text-base inline'>
+                    I agree to share my email so people can contact me about
+                    this submission.
+                  </FormDescription>
                   <FormMessage className='text-[#1DB954] text-base' />
                 </FormItem>
               )}

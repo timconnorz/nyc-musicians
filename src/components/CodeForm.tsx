@@ -69,9 +69,9 @@ export default function CodeForm({
 
   return (
     <>
-      {message}
       {
         <Form {...form}>
+            <div className='relative w-full sm:w-80 mx-auto text-center'>{message}</div>
           <div className='relative w-full sm:w-80 mx-auto pt-5'>
             <form
               onSubmit={form.handleSubmit(onSubmit)}

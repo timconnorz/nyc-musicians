@@ -4,6 +4,7 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
+  "prettier.configPath": "./prettier.config.js",
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },

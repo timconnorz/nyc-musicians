@@ -5,6 +5,7 @@ interface NewsletterProps {
   submissions: Array<{
     headline: string;
     details: string;
+    user_email: string;
   }>;
 }
 
@@ -66,6 +67,9 @@ export const Newsletter: React.FC<Readonly<NewsletterProps>> = ({
         </h2>
         <p style={{ fontSize: '14px', lineHeight: '1.4', color: '#282828' }}>
           {submission.details}
+        </p>
+        <p style={{ fontSize: '12px', lineHeight: '1.2', color: '#686868' }}>
+          Contact: {submission.user_email}
         </p>
       </div>
     ))}
