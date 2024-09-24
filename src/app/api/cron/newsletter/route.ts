@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSupabaseServiceRoleClient } from '@/lib/server/supabaseBE';
 import { getResend, fromString } from '@/lib/server/resend';
 import { Newsletter } from '@/components/emails/Newsletter';
+import { generateUnsubscribeLink } from '@/lib/server/resend';
 
 export async function POST(request: Request) {
   try {
@@ -15,6 +16,15 @@ export async function POST(request: Request) {
           message: 'Unauthorized',
         },
         { status: 401 }
+      );
+    }
+
+    if (!process.env.RESEND_AUDIENCE_ID) {
+      return NextResponse.json(
+        {
+          message: 'Audience ID not set',
+        },
+        { status: 500 }
       );
     }
 
@@ -42,7 +52,7 @@ export async function POST(request: Request) {
     // Get the audience contacts
     const resend = getResend();
     const { data } = await resend.contacts.list({
-      audienceId: '0b871675-693d-4d17-a8e4-f03dd16dcb51',
+      audienceId: process.env.RESEND_AUDIENCE_ID,
     });
     const contacts = data?.data || [];
 
@@ -71,12 +81,23 @@ export async function POST(request: Request) {
       sends.push(
         resend.batch
           .send(
-            batch?.map(contact => ({
-              to: contact.email,
-              from: fromString,
-              subject: `NYC Musicians Wanted: ${today}`,
-              react: Newsletter({ date: today, submissions }),
-            }))
+            batch?.map(contact => {
+              const unsubscribeLink = generateUnsubscribeLink(contact.id);
+              return {
+                to: contact.email,
+                from: fromString,
+                subject: `NYC Musicians Wanted: ${today}`,
+                react: Newsletter({
+                  date: today,
+                  submissions,
+                  unsubscribeLink,
+                }),
+                headers: {
+                  'List-Unsubscribe': `<${unsubscribeLink}>`,
+                  'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+                },
+              };
+            })
           )
           .catch(error => {
             console.error('Error sending batch:', error);

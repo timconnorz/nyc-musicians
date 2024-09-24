@@ -7,11 +7,13 @@ interface NewsletterProps {
     details: string;
     user_email: string;
   }>;
+  unsubscribeLink: string;
 }
 
 export const Newsletter: React.FC<Readonly<NewsletterProps>> = ({
   date,
   submissions,
+  unsubscribeLink,
 }) => (
   <div
     style={{
@@ -92,6 +94,23 @@ export const Newsletter: React.FC<Readonly<NewsletterProps>> = ({
         }}
       >
         NYC Musicians Wanted
+      </a>
+    </div>
+    <div
+      style={{
+        textAlign: 'center',
+        marginTop: '5px',
+      }}
+    >
+      <a
+        href={unsubscribeLink}
+        style={{
+          color: '#1DB954',
+          textDecoration: 'underline',
+          fontSize: '12px',
+        }}
+      >
+        Unsubscribe
       </a>
     </div>
   </div>
