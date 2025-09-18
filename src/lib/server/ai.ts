@@ -31,7 +31,7 @@ export async function assessSubmission(submission: Submission) {
 }
 
 const prompt = `
-  You are a classifying tool tasked with classifying user submissions into one of two categories: "approved" or "rejected".
+  You are a classifying tool tasked with classifying user submissions into  one of two categories: "approved" or "rejected".
 
   Your goal to approve all submissions that appear to be a genuine opportunity for a musician and reject everything else. 
   
