@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { getSupabaseAnonClient } from '@/lib/client/supabaseFE';
+import { getSessionEmail } from '@/app/actions';
 import Image from 'next/image';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
@@ -20,9 +20,9 @@ export default function Home() {
   // print the user's email to the console if they are signed in
   useEffect(() => {
     async function checkUser() {
-      const session = await getSupabaseAnonClient().auth.getSession();
-      if (session.data.session?.user.email) {
-        console.log(`Signed in as ${session.data.session.user.email}`);
+      const sessionEmail = await getSessionEmail();
+      if (sessionEmail) {
+        console.log(`Signed in as ${sessionEmail}`);
       }
     }
     checkUser();

@@ -10,7 +10,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { getSupabaseAnonClient } from '@/lib/client/supabaseFE';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -19,7 +18,12 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import CodeForm from './CodeForm';
 import { LoadingSpinner } from './ui/spinner';
-import { newsletterSignUp, sendSignUpConfirmationEmail } from '@/app/actions';
+import {
+  getSessionEmail,
+  newsletterSignUp,
+  sendLoginCode,
+  sendSignUpConfirmationEmail,
+} from '@/app/actions';
 const formSchema = z.object({
   email: z.string().email('Invalid email address'),
 });
@@ -45,24 +49,17 @@ export default function SignUpForm() {
       }
 
       // Get the session again to make sure it's still valid
-      const {
-        data: { session },
-      } = await getSupabaseAnonClient().auth.getSession();
-      const jwt = session?.access_token;
+      const sessionEmail = await getSessionEmail();
 
-      if (!jwt) {
-        throw new Error('No session token found');
-      }
-
-      if (!session?.user.email) {
+      if (!sessionEmail) {
         throw new Error('No user email found');
       }
 
       // Add to Resend audience
-      await newsletterSignUp(email);
+      await newsletterSignUp();
 
       // Send sign up confirmation email
-      await sendSignUpConfirmationEmail(email);
+      await sendSignUpConfirmationEmail();
 
       router.push('/sign-up-success');
     } catch (error) {
@@ -73,12 +70,13 @@ export default function SignUpForm() {
 
   const onSubmit = async (values: FormValues) => {
     try {
-      const {
-        data: { session },
-      } = await getSupabaseAnonClient().auth.getSession();
+      const sessionEmail = await getSessionEmail();
 
       // If the signed in email matches the email in the form, we're good to go
-      if (session?.user.email && session.user.email === values.email) {
+      if (
+        sessionEmail &&
+        sessionEmail === values.email.trim().toLowerCase()
+      ) {
         await signUpForNewsletter(values.email);
         return;
       }
@@ -86,15 +84,7 @@ export default function SignUpForm() {
       setUnverifiedEmail(values.email.trim());
 
       // Send a one time code to the users inbox
-      const { error: signInError } =
-        await getSupabaseAnonClient().auth.signInWithOtp({
-          email: values.email.trim(),
-          options: {
-            shouldCreateUser: true,
-          },
-        });
-
-      if (signInError) throw signInError;
+      await sendLoginCode(values.email.trim());
 
       setCodeRequired(true);
     } catch (error) {

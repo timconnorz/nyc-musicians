@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseServiceRoleClient } from '@/lib/server/supabaseBE';
+import {
+  getUnsentApprovedSubmissions,
+  markSubmissionsSent,
+} from '@/lib/server/db';
 import { getResend, fromString } from '@/lib/server/resend';
 import { Newsletter } from '@/components/emails/Newsletter';
 import { generateUnsubscribeLink } from '@/lib/server/resend';
@@ -37,79 +40,15 @@ export async function POST(request: Request) {
     }
     console.log('Environment variables OK');
 
-    // Always make a keepalive query to prevent Supabase from pausing
-    console.log('Initializing Supabase client...');
-    const supabase = getSupabaseServiceRoleClient();
-    console.log(
-      'Making keepalive query to prevent Supabase pause (with retry logic)...'
-    );
-
-    // Retry logic for waking up paused Supabase
-    let keepaliveSuccess = false;
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        console.log(`Keepalive attempt ${attempt}/3...`);
-        const { error: keepaliveError } = await supabase
-          .from('submissions')
-          .select('id')
-          .limit(1);
-
-        if (keepaliveError) {
-          console.error(`Keepalive attempt ${attempt} failed:`, keepaliveError);
-          if (attempt === 3) {
-            throw new Error(
-              `Supabase keepalive failed after 3 attempts: ${keepaliveError.message}`
-            );
-          }
-        } else {
-          console.log(`Keepalive attempt ${attempt} successful`);
-          keepaliveSuccess = true;
-          break;
-        }
-      } catch (error) {
-        console.error(`Error during keepalive attempt ${attempt}:`, error);
-        if (attempt === 3) {
-          throw error;
-        }
-        // Wait before retrying (exponential backoff: 2s, 4s)
-        const waitTime = Math.pow(2, attempt) * 1000;
-        console.log(`Waiting ${waitTime}ms before retry...`);
-        await new Promise(resolve => setTimeout(resolve, waitTime));
-      }
-    }
-
-    if (!keepaliveSuccess) {
-      throw new Error('Failed to wake up Supabase after 3 attempts');
-    }
-
     // First, get all submissions which have not yet been sent
     // And which have been approved by the LLM
     console.log('Querying submissions...');
-    let submissions;
-    try {
-      const { data, error } = await supabase
-        .from('submissions')
-        .select('*')
-        .is('sent_at', null)
-        .eq('approved', true)
-        // oldest first
-        .order('created_at', { ascending: true });
+    const submissions = getUnsentApprovedSubmissions();
 
-      if (error) {
-        console.error('Submissions query failed:', error);
-        throw new Error(`Supabase submissions query failed: ${error.message}`);
-      }
-      submissions = data;
-      console.log('Submissions query successful');
-    } catch (error) {
-      console.error('Error during submissions query:', error);
-      throw error;
-    }
-
-    if (!submissions?.length) {
-      console.log('No submissions to send, but keepalive query completed');
+    if (!submissions.length) {
+      console.log('No submissions to send');
       return NextResponse.json({
-        message: 'No submissions to send, but keepalive query completed',
+        message: 'No submissions to send',
       });
     }
 
@@ -199,13 +138,7 @@ export async function POST(request: Request) {
     }
 
     // Update the submissions sent_at values
-    await getSupabaseServiceRoleClient()
-      .from('submissions')
-      .update({ sent_at: new Date().toISOString() })
-      .in(
-        'id',
-        submissions.map(submission => submission.id)
-      );
+    markSubmissionsSent(submissions.map(submission => submission.id));
 
     console.log(`Successfully sent out ${submissions?.length} submissions`);
     return NextResponse.json({

@@ -10,7 +10,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { getSupabaseAnonClient } from '@/lib/client/supabaseFE';
+import { verifyLoginCode } from '@/app/actions';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -46,16 +46,9 @@ export default function CodeForm({
         return;
       }
 
-      const {
-        error: signInError,
-        data: { session },
-      } = await getSupabaseAnonClient().auth.verifyOtp({
-        email: unverifiedEmail,
-        token: values.code,
-        type: 'email',
-      });
+      const verified = await verifyLoginCode(unverifiedEmail, values.code);
 
-      if (signInError || !session) throw signInError;
+      if (!verified) throw new Error('Invalid or expired code');
 
       // Call the callback function
       await callback();
