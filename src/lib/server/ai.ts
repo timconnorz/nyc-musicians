@@ -1,10 +1,7 @@
 import { anthropic } from '@ai-sdk/anthropic';
 import { generateObject } from 'ai';
-import { getSupabaseServiceRoleClient } from '@/lib/server/supabaseBE';
-import { Database } from '@/generated-types';
+import { setSubmissionApproved, Submission } from '@/lib/server/db';
 import { z } from 'zod';
-
-type Submission = Database['public']['Tables']['submissions']['Row'];
 
 export async function assessSubmission(submission: Submission) {
   console.log('Assessing submission:', submission);
@@ -21,13 +18,7 @@ export async function assessSubmission(submission: Submission) {
 
   console.log('Anthropic response:', object);
 
-  // Update the row in supabase
-  const { error } = await getSupabaseServiceRoleClient()
-    .from('submissions')
-    .update({ approved: object.approved })
-    .eq('id', submission.id);
-
-  if (error) throw error;
+  setSubmissionApproved(submission.id, object.approved);
 }
 
 const prompt = `

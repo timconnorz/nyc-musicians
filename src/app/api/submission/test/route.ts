@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseServiceRoleClient } from '@/lib/server/supabaseBE';
+import { insertSubmission } from '@/lib/server/db';
 import { assessSubmission } from '@/lib/server/ai';
 export async function POST(request: Request) {
   try {
@@ -35,18 +35,19 @@ export async function POST(request: Request) {
       );
     }
 
-    // Store the submissions in Supabase
-    const supabase = getSupabaseServiceRoleClient();
-    const { data, error } = await supabase
-      .from('submissions')
-      .insert(submissions)
-      .select();
-    if (error) throw error;
+    // Store the submissions
+    const stored = submissions.map(submission =>
+      insertSubmission({
+        headline: submission.headline,
+        details: submission.details,
+        user_email: submission.user_email,
+      })
+    );
 
     console.log(`Successfully stored ${submissions.length} submissions`);
 
     // Now run the LLM assessment for each submission
-    for (const submission of data) {
+    for (const submission of stored) {
       console.log(`Assessing submission ${submission.id}`);
       await assessSubmission(submission);
     }

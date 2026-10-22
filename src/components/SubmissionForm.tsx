@@ -19,7 +19,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { getSupabaseAnonClient } from '@/lib/client/supabaseFE';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -32,6 +31,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { useEffect } from 'react';
 import {
+  getSessionEmail,
+  sendLoginCode,
   submitSubmission,
   sendSubmissionConfirmationEmail,
 } from '@/app/actions';
@@ -73,9 +74,9 @@ export default function SubmissionForm() {
   // Use useEffect to set the email value
   useEffect(() => {
     async function setFormEmail() {
-      const session = await getSupabaseAnonClient().auth.getSession();
-      if (session.data.session?.user.email) {
-        form.setValue('email', session.data.session.user.email);
+      const sessionEmail = await getSessionEmail();
+      if (sessionEmail) {
+        form.setValue('email', sessionEmail);
       }
     }
     setFormEmail();
@@ -83,11 +84,9 @@ export default function SubmissionForm() {
 
   const sendSubmission = async (submission: SubmissionFormData | null) => {
     // Get the session again to make sure it's still valid
-    const {
-      data: { session },
-    } = await getSupabaseAnonClient().auth.getSession();
+    const sessionEmail = await getSessionEmail();
 
-    if (!session?.user.email) {
+    if (!sessionEmail) {
       throw new Error('No user email found');
     }
 
@@ -95,13 +94,12 @@ export default function SubmissionForm() {
       throw new Error('No submission');
     }
 
-    if (submission.email !== session.user.email) {
+    if (submission.email.trim().toLowerCase() !== sessionEmail) {
       throw new Error('user_email does not match session email');
     }
 
     try {
       await submitSubmission(
-        submission.email.trim(),
         submission['one sentence headline'],
         submission.details
       );
@@ -111,7 +109,7 @@ export default function SubmissionForm() {
     }
 
     // Send email to user with submission confirmation
-    await sendSubmissionConfirmationEmail(submission.email);
+    await sendSubmissionConfirmationEmail();
 
     // Reroute to /submission-success
     router.push('/submission-success');
@@ -119,12 +117,13 @@ export default function SubmissionForm() {
 
   const onSubmit = async (values: SubmissionFormData) => {
     try {
-      const {
-        data: { session },
-      } = await getSupabaseAnonClient().auth.getSession();
+      const sessionEmail = await getSessionEmail();
 
       // If the signed in email matches the email in the form, then we're good to go
-      if (session?.user.email && session.user.email === values.email) {
+      if (
+        sessionEmail &&
+        sessionEmail === values.email.trim().toLowerCase()
+      ) {
         await sendSubmission(values);
         return;
       }
@@ -133,15 +132,7 @@ export default function SubmissionForm() {
       setUnverifiedEmail(values.email.trim());
 
       // Send a one time code to the users inbox
-      const { error: signInError } =
-        await getSupabaseAnonClient().auth.signInWithOtp({
-          email: values.email.trim(),
-          options: {
-            shouldCreateUser: true,
-          },
-        });
-
-      if (signInError) throw signInError;
+      await sendLoginCode(values.email.trim());
 
       setCodeRequired(true);
     } catch (error) {

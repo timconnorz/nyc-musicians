@@ -1,7 +1,7 @@
 'use client';
 
 import jsConfetti from '@/lib/client/confetti';
-import { getSupabaseAnonClient } from '@/lib/client/supabaseFE';
+import { getSessionEmail } from '@/app/actions';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -32,8 +32,7 @@ export default function SignUp() {
   useEffect(() => {
     async function checkUser() {
       try {
-        const session = await getSupabaseAnonClient().auth.getSession();
-        const email = session.data.session?.user?.email;
+        const email = await getSessionEmail();
         if (!email) {
           router.push('/');
         } else {

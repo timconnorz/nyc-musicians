@@ -37,3 +37,6 @@ next-env.d.ts
 
 # vs code
 .vscode
+
+# sqlite database (on Railway this lives on the /data volume)
+/data

@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { getSupabaseAnonClient } from '@/lib/client/supabaseFE';
+import { getSessionEmail } from '@/app/actions';
 import jsConfetti from '@/lib/client/confetti';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -21,9 +21,10 @@ export default function Submission() {
   useEffect(() => {
     async function checkUser() {
       try {
-        const session = await getSupabaseAnonClient().auth.getSession();
-        if (!session) {
+        const email = await getSessionEmail();
+        if (!email) {
           router.push('/');
+          return;
         }
         jsConfetti?.addConfetti({
           emojis: ['🎶', '🗞️', '📣', '🎸', '📩', '📰'],
