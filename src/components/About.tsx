@@ -16,8 +16,8 @@ const About = () => {
       </p>
       <p>
         If you have any feedback or suggestions, please reach out to us at{' '}
-        <a href='mailto:info@nycmusicianswanted.com'>
-          info@nycmusicianswanted.com
+        <a href='mailto:nycmusicianswanted@inbox123.me'>
+          nycmusicianswanted@inbox123.me
         </a>
       </p>
       <p className='text-[#888] mt-4'>Site Last Updated Sep 16 2024</p>
