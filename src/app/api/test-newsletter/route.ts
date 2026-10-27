@@ -41,7 +41,8 @@ export async function POST(request: Request) {
 
     const unsubscribeLink = generateUnsubscribeLink(tim.id);
 
-    await resend.emails.send({
+    // The SDK returns API errors rather than throwing them
+    const { error } = await resend.emails.send({
       to: tim.email,
       from: fromString,
       subject: `NYC Musicians Wanted: ${today}`,
@@ -61,6 +62,10 @@ export async function POST(request: Request) {
         'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
       },
     });
+
+    if (error) {
+      throw new Error(`Resend send failed: ${error.name}: ${error.message}`);
+    }
 
     return NextResponse.json({
       message: `Done`,
