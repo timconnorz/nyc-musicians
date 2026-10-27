@@ -27,14 +27,24 @@ const batchAttempts: string[][] = [];
 
 globalThis.fetch = async (input, init) => {
   const url = String(input);
-  if (url.startsWith('https://api.resend.com/audiences/audience/contacts')) {
+  if (url.startsWith('https://api.resend.com/segments/audience/contacts')) {
     if (contactsStatus !== 200) {
       return Response.json(
         { name: 'application_error', message: 'boom', statusCode: 500 },
         { status: contactsStatus }
       );
     }
-    return Response.json({ object: 'list', data: contacts });
+    // Paginate like the real API
+    const params = new URL(url).searchParams;
+    const limit = Number(params.get('limit') ?? 20);
+    const after = params.get('after');
+    const start = after ? contacts.findIndex(c => c.id === after) + 1 : 0;
+    const page = contacts.slice(start, start + limit);
+    return Response.json({
+      object: 'list',
+      data: page,
+      has_more: start + limit < contacts.length,
+    });
   }
   if (url === 'https://api.resend.com/emails/batch') {
     const emails = JSON.parse(String(init?.body)) as { to: string }[];
@@ -122,6 +132,18 @@ describe('POST /api/cron/newsletter', () => {
     assert.deepEqual(batchAttempts, [
       ['musician0@example.com', 'musician2@example.com'],
     ]);
+    assert.equal(unsentCount(), 0);
+  });
+
+  it('sends to every page of contacts', async () => {
+    contacts = makeContacts(250);
+
+    const res = await POST(cronRequest());
+
+    assert.equal(res.status, 200);
+    const recipients = batchAttempts.flat();
+    assert.equal(recipients.length, 250);
+    assert.equal(new Set(recipients).size, 250);
     assert.equal(unsentCount(), 0);
   });
 

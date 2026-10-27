@@ -139,13 +139,13 @@ export const checks: Check[] = [
     'resend',
     async () => {
       const key = process.env.RESEND_API_KEY;
-      const audienceId = process.env.RESEND_AUDIENCE_ID;
-      if (!key || !audienceId) throw new HealthError('not configured');
-      // Read-only: confirms the key works and the newsletter audience exists
-      const { error } = await new Resend(key).audiences.get(audienceId);
+      const segmentId = process.env.RESEND_AUDIENCE_ID;
+      if (!key || !segmentId) throw new HealthError('not configured');
+      // Read-only: confirms the key works and the newsletter segment exists
+      const { error } = await new Resend(key).segments.get(segmentId);
       if (!error) return;
       if (error.name === 'not_found') {
-        throw new HealthError('newsletter audience not found');
+        throw new HealthError('newsletter segment not found');
       }
       // The SDK's types lag the API, which also returns invalid_api_key,
       // restricted_api_key, and validation_error for a malformed key

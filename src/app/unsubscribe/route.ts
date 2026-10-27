@@ -88,14 +88,10 @@ async function extractContactIdFromRequest(request: Request) {
 }
 
 async function unsubscribeContact(contactId: string) {
-  if (!process.env.RESEND_AUDIENCE_ID) {
-    throw new Error('RESEND_AUDIENCE_ID is not set');
-  }
   const resend = getResend();
-  const { error: unsubscribeError } = await resend.contacts.remove({
-    audienceId: process.env.RESEND_AUDIENCE_ID,
-    id: contactId,
-  });
+  // Contacts only belong to the newsletter segment, so deleting the contact
+  // unsubscribes them and lets them sign up again later
+  const { error: unsubscribeError } = await resend.contacts.remove(contactId);
   if (unsubscribeError) {
     console.error('Error unsubscribing contact:', unsubscribeError);
     throw new Error('Error unsubscribing contact');
