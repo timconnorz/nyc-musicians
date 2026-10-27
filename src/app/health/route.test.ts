@@ -101,7 +101,7 @@ describe('GET /health', () => {
     assert.deepEqual(await res.json(), {
       errors: [
         'env: CRON_KEY missing',
-        'anthropic: model claude-3-haiku-20240307 not found',
+        'anthropic: model claude-haiku-5-5 not found',
       ],
     });
   });

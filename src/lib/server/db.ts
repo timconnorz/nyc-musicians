@@ -73,7 +73,9 @@ export function insertSubmission(
 
 export function setSubmissionApproved(id: number, approved: boolean) {
   getDb()
-    .prepare<[number, number]>('UPDATE submissions SET approved = ? WHERE id = ?')
+    .prepare<[number, number]>(
+      'UPDATE submissions SET approved = ? WHERE id = ?'
+    )
     .run(approved ? 1 : 0, id);
 }
 
@@ -86,6 +88,18 @@ export function getUnsentApprovedSubmissions() {
        ORDER BY created_at ASC`
     )
     .all()
+    .map(toSubmission);
+}
+
+// Submissions created after `since` that were never approved or rejected
+export function getUnassessedSubmissions(since: string) {
+  return getDb()
+    .prepare<[string], SubmissionRow>(
+      `SELECT * FROM submissions
+       WHERE approved IS NULL AND created_at > ?
+       ORDER BY created_at ASC`
+    )
+    .all(since)
     .map(toSubmission);
 }
 

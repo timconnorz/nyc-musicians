@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { ASSESSMENT_MODEL } from './ai';
 import { getDb } from './db';
 
 // Read-only checks behind GET /health, polled daily by the project monitor.
@@ -19,9 +20,6 @@ const ASSESSMENT_GRACE_HOURS = 1;
 // Ignore unassessed submissions older than this so a single historical
 // failure doesn't alert forever
 const ASSESSMENT_LOOKBACK_HOURS = 7 * 24;
-
-// Must match the model used in ./ai.ts
-const ASSESSMENT_MODEL = 'claude-3-haiku-20240307';
 
 const REQUIRED_ENV = [
   'NEXT_PUBLIC_APP_URL',
