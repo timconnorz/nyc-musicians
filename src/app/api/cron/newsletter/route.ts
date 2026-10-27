@@ -6,6 +6,7 @@ import {
 import { getResend, fromString } from '@/lib/server/resend';
 import { Newsletter } from '@/components/emails/Newsletter';
 import { generateUnsubscribeLink } from '@/lib/server/resend';
+import { assessPendingSubmissions } from '@/lib/server/ai';
 
 export async function POST(request: Request) {
   try {
@@ -40,7 +41,12 @@ export async function POST(request: Request) {
     }
     console.log('Environment variables OK');
 
-    // First, get all submissions which have not yet been sent
+    // Retry any submissions whose assessment failed when they were created
+    console.log('Assessing pending submissions...');
+    const pending = await assessPendingSubmissions();
+    console.log('Pending submissions assessed:', pending);
+
+    // Then get all submissions which have not yet been sent
     // And which have been approved by the LLM
     console.log('Querying submissions...');
     const submissions = getUnsentApprovedSubmissions();

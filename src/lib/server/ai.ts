@@ -1,7 +1,16 @@
 import { anthropic } from '@ai-sdk/anthropic';
 import { generateObject } from 'ai';
-import { setSubmissionApproved, Submission } from '@/lib/server/db';
+import {
+  getUnassessedSubmissions,
+  setSubmissionApproved,
+  Submission,
+} from '@/lib/server/db';
 import { z } from 'zod';
+
+export const ASSESSMENT_MODEL = 'claude-haiku-5-5';
+
+// Posts older than this are probably stale, so don't send them out late
+const REASSESS_LOOKBACK_DAYS = 30;
 
 export async function assessSubmission(submission: Submission) {
   console.log('Assessing submission:', submission);
@@ -9,7 +18,7 @@ export async function assessSubmission(submission: Submission) {
   const submissionString = `> Headline: ${submission.headline}\n> Details: ${submission.details}`;
 
   const { object } = await generateObject({
-    model: anthropic('claude-3-haiku-20240307'),
+    model: anthropic(ASSESSMENT_MODEL),
     prompt: prompt + submissionString,
     schema: z.object({
       approved: z.boolean(),
@@ -19,6 +28,29 @@ export async function assessSubmission(submission: Submission) {
   console.log('Anthropic response:', object);
 
   setSubmissionApproved(submission.id, object.approved);
+}
+
+/**
+ * Assess recent submissions whose assessment never completed, e.g. because
+ * the fire-and-forget call in submitSubmission failed.
+ */
+export async function assessPendingSubmissions() {
+  const since = new Date(
+    Date.now() - REASSESS_LOOKBACK_DAYS * 24 * 60 * 60 * 1000
+  ).toISOString();
+  const pending = getUnassessedSubmissions(since);
+
+  let failed = 0;
+  for (const submission of pending) {
+    try {
+      await assessSubmission(submission);
+    } catch (error) {
+      console.error(`Error assessing submission ${submission.id}:`, error);
+      failed++;
+    }
+  }
+
+  return { assessed: pending.length - failed, failed };
 }
 
 const prompt = `
