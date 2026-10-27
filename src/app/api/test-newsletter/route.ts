@@ -2,6 +2,7 @@ import {
   fromString,
   generateUnsubscribeLink,
   getResend,
+  listSegmentContacts,
 } from '@/lib/server/resend';
 import { NextResponse } from 'next/server';
 import { Newsletter } from '@/components/emails/Newsletter';
@@ -19,16 +20,9 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!process.env.RESEND_AUDIENCE_ID) {
-      throw Error('Audience ID not set');
-    }
-
-    // Get the audience contacts
+    // Get the newsletter segment's contacts
     const resend = getResend();
-    const { data } = await resend.contacts.list({
-      audienceId: process.env.RESEND_AUDIENCE_ID,
-    });
-    const contacts = data?.data || [];
+    const contacts = await listSegmentContacts();
 
     const tim = contacts.filter(
       contact => contact.email === 's@timconnors.co'

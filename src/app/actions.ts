@@ -10,7 +10,7 @@ import {
   requireSessionEmail,
   setSessionEmail,
 } from '../lib/server/auth';
-import { getResend, fromString } from '../lib/server/resend';
+import { getResend, fromString, getSegmentId } from '../lib/server/resend';
 import SubmissionConfirmed from '@/components/emails/SubmissionConfirmed';
 import SignUpConfirmed from '@/components/emails/SignUpConfirmed';
 import LoginCode from '@/components/emails/LoginCode';
@@ -51,14 +51,10 @@ export async function verifyLoginCode(email: string, code: string) {
 export async function newsletterSignUp() {
   const email = requireSessionEmail();
 
-  if (!process.env.RESEND_AUDIENCE_ID) {
-    throw new Error('RESEND_AUDIENCE_ID is not set');
-  }
-
   const { data, error } = await getResend().contacts.create({
     email: email,
     unsubscribed: false,
-    audienceId: process.env.RESEND_AUDIENCE_ID,
+    segments: [{ id: getSegmentId() }],
   });
 
   if (error) throw error;

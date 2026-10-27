@@ -3,7 +3,11 @@ import {
   getUnsentApprovedSubmissions,
   markSubmissionsSent,
 } from '@/lib/server/db';
-import { getResend, fromString } from '@/lib/server/resend';
+import {
+  getResend,
+  fromString,
+  listSegmentContacts,
+} from '@/lib/server/resend';
 import { Newsletter } from '@/components/emails/Newsletter';
 import { generateUnsubscribeLink } from '@/lib/server/resend';
 import { assessPendingSubmissions } from '@/lib/server/ai';
@@ -60,21 +64,12 @@ export async function POST(request: Request) {
 
     console.log(`Found ${submissions?.length} submissions to send`);
 
-    // Get the audience contacts
+    // Get the newsletter segment's contacts
     console.log('Initializing Resend client...');
     const resend = getResend();
     console.log('Fetching contacts from Resend...');
 
-    // The SDK returns API errors rather than throwing them
-    const { data, error: contactsError } = await resend.contacts.list({
-      audienceId: process.env.RESEND_AUDIENCE_ID,
-    });
-    if (contactsError) {
-      throw new Error(
-        `Resend contacts fetch failed: ${contactsError.name}: ${contactsError.message}`
-      );
-    }
-    const contacts = (data?.data || []).filter(
+    const contacts = (await listSegmentContacts()).filter(
       contact => !contact.unsubscribed
     );
     console.log('Resend contacts fetch successful');
