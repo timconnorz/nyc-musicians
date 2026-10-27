@@ -51,10 +51,14 @@ export async function verifyLoginCode(email: string, code: string) {
 export async function newsletterSignUp() {
   const email = requireSessionEmail();
 
+  if (!process.env.RESEND_AUDIENCE_ID) {
+    throw new Error('RESEND_AUDIENCE_ID is not set');
+  }
+
   const { data, error } = await getResend().contacts.create({
     email: email,
     unsubscribed: false,
-    audienceId: '0b871675-693d-4d17-a8e4-f03dd16dcb51',
+    audienceId: process.env.RESEND_AUDIENCE_ID,
   });
 
   if (error) throw error;
@@ -63,13 +67,13 @@ export async function newsletterSignUp() {
 export async function submitSubmission(headline: string, details: string) {
   const email = requireSessionEmail();
 
-  console.log(`New submission from ${email}`);
-
   const submission = insertSubmission({
     headline,
     details,
     user_email: email,
   });
+
+  console.log(`New submission ${submission.id}`);
 
   // run the LLM assessment but don't wait for it
   assessSubmission(submission);
