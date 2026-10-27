@@ -1,33 +1,68 @@
-import { anthropic } from '@ai-sdk/anthropic';
-import { generateObject } from 'ai';
+import Anthropic from '@anthropic-ai/sdk';
 import {
   getUnassessedSubmissions,
   setSubmissionApproved,
   Submission,
 } from '@/lib/server/db';
-import { z } from 'zod';
 
 export const ASSESSMENT_MODEL = 'claude-haiku-5-5';
 
 // Posts older than this are probably stale, so don't send them out late
 const REASSESS_LOOKBACK_DAYS = 30;
 
+let client: Anthropic;
+
+// Reads ANTHROPIC_API_KEY. Uses the global fetch so tests can mock it.
+function getClient() {
+  if (!client) client = new Anthropic({ fetch: globalThis.fetch });
+  return client;
+}
+
+/** Ask the model whether a submission is a genuine musician opportunity */
+export async function classifySubmission(headline: string, details: string) {
+  const submissionString = `> Headline: ${headline}\n> Details: ${details}`;
+
+  // Newer models reject `temperature`, so leave sampling at the defaults
+  const message = await getClient().messages.create({
+    model: ASSESSMENT_MODEL,
+    max_tokens: 1024,
+    messages: [{ role: 'user', content: prompt + submissionString }],
+    tools: [
+      {
+        name: 'classify',
+        description: 'Record whether the submission is approved',
+        input_schema: {
+          type: 'object',
+          properties: { approved: { type: 'boolean' } },
+          required: ['approved'],
+        },
+      },
+    ],
+    tool_choice: { type: 'tool', name: 'classify' },
+  });
+
+  const toolUse = message.content.find(block => block.type === 'tool_use');
+  const approved =
+    toolUse?.type === 'tool_use'
+      ? (toolUse.input as { approved?: unknown }).approved
+      : undefined;
+  if (typeof approved !== 'boolean') {
+    throw new Error('Anthropic response did not include a classification');
+  }
+  return approved;
+}
+
 export async function assessSubmission(submission: Submission) {
   console.log('Assessing submission:', submission);
 
-  const submissionString = `> Headline: ${submission.headline}\n> Details: ${submission.details}`;
+  const approved = await classifySubmission(
+    submission.headline,
+    submission.details
+  );
 
-  const { object } = await generateObject({
-    model: anthropic(ASSESSMENT_MODEL),
-    prompt: prompt + submissionString,
-    schema: z.object({
-      approved: z.boolean(),
-    }),
-  });
+  console.log('Anthropic response:', { approved });
 
-  console.log('Anthropic response:', object);
-
-  setSubmissionApproved(submission.id, object.approved);
+  setSubmissionApproved(submission.id, approved);
 }
 
 /**

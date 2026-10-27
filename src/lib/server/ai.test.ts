@@ -18,7 +18,20 @@ globalThis.fetch = async (input, init) => {
   if (!url.startsWith('https://api.anthropic.com/v1/messages')) {
     throw new Error(`unexpected fetch to ${url}`);
   }
-  requestedModels.push(JSON.parse(String(init?.body)).model);
+  const body = JSON.parse(String(init?.body));
+  requestedModels.push(body.model);
+  if ('temperature' in body) {
+    return Response.json(
+      {
+        type: 'error',
+        error: {
+          type: 'invalid_request_error',
+          message: '`temperature` is deprecated for this model.',
+        },
+      },
+      { status: 400 }
+    );
+  }
   if (failRequests) {
     return Response.json(
       { type: 'error', error: { type: 'not_found_error', message: 'model' } },
@@ -34,7 +47,7 @@ globalThis.fetch = async (input, init) => {
       {
         type: 'tool_use',
         id: 'tool_test',
-        name: 'json',
+        name: 'classify',
         input: { approved: true },
       },
     ],
