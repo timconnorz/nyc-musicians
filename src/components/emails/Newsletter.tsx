@@ -42,7 +42,7 @@ export const Newsletter: React.FC<Readonly<NewsletterProps>> = ({
         href='https://nycmusicianswanted.com'
         style={{ color: '#1DB954', textDecoration: 'none' }}
       >
-        nyc-musicians-wanted.com
+        nycmusicianswanted.com
       </a>
       .
     </p>
