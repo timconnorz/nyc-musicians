@@ -11,7 +11,8 @@
     "cron:newsletter": "tsx ./run-cron.ts",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "tsx --test 'src/**/*.test.ts'"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^0.0.33",
