@@ -47,7 +47,7 @@ export async function GET(request: Request) {
         <body style="display: flex; justify-content: center;">
           <div style="text-align: center;">
             <h2>Unsubscribe from Newsletter</h2>
-            <form method="POST" action="/unsubscribe?token=${tokenParam}">
+            <form method="POST" action="/unsubscribe?token=${encodeURIComponent(tokenParam ?? '')}">
               <button type="submit">Unsubscribe</button>
             </form>
           </div>

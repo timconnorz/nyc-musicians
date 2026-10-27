@@ -65,28 +65,28 @@ export async function POST(request: Request) {
     const resend = getResend();
     console.log('Fetching contacts from Resend...');
 
-    let contacts;
-    try {
-      const { data } = await resend.contacts.list({
-        audienceId: process.env.RESEND_AUDIENCE_ID,
-      });
-      contacts = data?.data || [];
-      console.log('Resend contacts fetch successful');
-    } catch (error) {
-      console.error('Error fetching contacts from Resend:', error);
+    // The SDK returns API errors rather than throwing them
+    const { data, error: contactsError } = await resend.contacts.list({
+      audienceId: process.env.RESEND_AUDIENCE_ID,
+    });
+    if (contactsError) {
       throw new Error(
-        `Resend contacts fetch failed: ${error instanceof Error ? error.message : String(error)}`
+        `Resend contacts fetch failed: ${contactsError.name}: ${contactsError.message}`
       );
     }
+    const contacts = (data?.data || []).filter(
+      contact => !contact.unsubscribed
+    );
+    console.log('Resend contacts fetch successful');
 
-    if (!contacts?.length) {
+    if (!contacts.length) {
       console.log('No contacts to send to');
       return NextResponse.json({
         message: 'No contacts to send to',
       });
     }
 
-    console.log(`Found ${contacts?.length} contacts to send to`);
+    console.log(`Found ${contacts.length} contacts to send to`);
 
     // Get today's date in the format "Jan 12, 2023"
     const today = new Date().toLocaleDateString('en-US', {
@@ -95,49 +95,55 @@ export async function POST(request: Request) {
       year: 'numeric',
     });
 
-    // Iterate through batches of 100 contacts
-    let failures = 0;
-    const sends = [];
+    // Send in batches of 100 contacts, retrying a failed batch a couple of
+    // times before giving up on it
+    const sendBatch = async (batch: typeof contacts) => {
+      const emails = batch.map(contact => {
+        const unsubscribeLink = generateUnsubscribeLink(contact.id);
+        return {
+          to: contact.email,
+          from: fromString,
+          subject: `NYC Musicians Wanted: ${today}`,
+          react: Newsletter({
+            date: today,
+            submissions,
+            unsubscribeLink,
+          }),
+          headers: {
+            'List-Unsubscribe': `<${unsubscribeLink}>`,
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+          },
+        };
+      });
+
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        const { error } = await resend.batch.send(emails);
+        if (!error) return true;
+        console.error(
+          `Error sending batch (attempt ${attempt}): ${error.name}: ${error.message}`
+        );
+        if (attempt < 3) {
+          await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+        }
+      }
+      return false;
+    };
+
+    const batches = [];
     for (let i = 0; i < contacts.length; i += 100) {
-      const batch = contacts.slice(i, i + 100);
-      // Send to batch
-      sends.push(
-        resend.batch
-          .send(
-            batch?.map(contact => {
-              const unsubscribeLink = generateUnsubscribeLink(contact.id);
-              return {
-                to: contact.email,
-                from: fromString,
-                subject: `NYC Musicians Wanted: ${today}`,
-                react: Newsletter({
-                  date: today,
-                  submissions,
-                  unsubscribeLink,
-                }),
-                headers: {
-                  'List-Unsubscribe': `<${unsubscribeLink}>`,
-                  'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-                },
-              };
-            })
-          )
-          .catch(error => {
-            console.error('Error sending batch:', error);
-            failures++;
-          })
-      );
+      batches.push(contacts.slice(i, i + 100));
     }
+    const results = await Promise.all(batches.map(sendBatch));
+    const failures = results.filter(sent => !sent).length;
 
-    // Wait for all sends to complete
-    await Promise.all(sends);
-
-    // Log any failures
-    if (failures > 0) {
-      console.log(`Weekly cron job completed with ${failures} failures`);
+    // If nothing went out, leave the submissions unsent so the next run
+    // retries them. Otherwise mark them sent so the batches that did go out
+    // aren't sent the same newsletter again.
+    if (failures === batches.length) {
+      console.log('Every batch failed to send');
       return NextResponse.json(
         {
-          message: `Weekly cron job completed with ${failures} failures`,
+          message: 'Every batch failed to send',
         },
         { status: 500 }
       );
@@ -145,6 +151,18 @@ export async function POST(request: Request) {
 
     // Update the submissions sent_at values
     markSubmissionsSent(submissions.map(submission => submission.id));
+
+    if (failures > 0) {
+      console.log(
+        `Sent ${submissions.length} submissions, but ${failures} of ${batches.length} batches failed`
+      );
+      return NextResponse.json(
+        {
+          message: `Sent ${submissions.length} submissions, but ${failures} of ${batches.length} batches failed`,
+        },
+        { status: 500 }
+      );
+    }
 
     console.log(`Successfully sent out ${submissions?.length} submissions`);
     return NextResponse.json({

@@ -53,7 +53,7 @@ export async function classifySubmission(headline: string, details: string) {
 }
 
 export async function assessSubmission(submission: Submission) {
-  console.log('Assessing submission:', submission);
+  console.log(`Assessing submission ${submission.id}`);
 
   const approved = await classifySubmission(
     submission.headline,
