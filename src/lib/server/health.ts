@@ -12,9 +12,10 @@ export type Check = [name: string, run: () => Promise<void>];
 const CHECK_TIMEOUT_MS = 3000;
 const HOUR_MS = 60 * 60 * 1000;
 
-// The newsletter cron runs weekly, so an approved post should never wait
-// longer than a week. Allow an extra day of slack before alerting.
-const NEWSLETTER_MAX_PENDING_HOURS = 8 * 24;
+// The newsletter cron runs Mondays and Thursdays at 12:00 UTC (set on
+// Railway), so an approved post should never wait longer than 4 days.
+// Allow an extra day of slack before alerting.
+const NEWSLETTER_MAX_PENDING_HOURS = 5 * 24;
 // Submissions are assessed by the LLM right after they are created
 const ASSESSMENT_GRACE_HOURS = 1;
 // Ignore unassessed submissions older than this so a single historical
